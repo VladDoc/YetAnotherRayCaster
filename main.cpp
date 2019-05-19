@@ -120,17 +120,16 @@ int main( int argc, char** argv )
         return 1;
     }
 
-    SDL_FillRect(screen, 0, SDL_MapRGB(screen->format, 0, 0, 0));
+    SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
     const bool map[mapHeight][mapWidth] = {
-
                             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -140,7 +139,7 @@ int main( int argc, char** argv )
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-                                                                              };
+                                          };
 
     bool done = false;
     while (!done)
@@ -175,7 +174,7 @@ int main( int argc, char** argv )
                     {
                         player.x += sinf(player.angle) * walkingSpeed;
                         player.y += cosf(player.angle) * walkingSpeed;
-                    } // Faulty collision detection(resolution of a map is too low)
+                    }
                 }
                 if(event.key.keysym.sym == SDLK_w)
                 {
@@ -191,14 +190,10 @@ int main( int argc, char** argv )
             }
         }
 
-        //clock_t start = clock();
-
         for(int j = 0; j < screenWidth; ++j)
         {
             float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
-//            if(ray < 0.0f) {
-//                ray = pi * 2 + ray; // should always be in 0..360 degree range.
-//            }
+
             float distanceToAWall = 0.0f;
 
             Vector2D<float> eye;
@@ -259,7 +254,7 @@ int main( int argc, char** argv )
                 }
             }
         }
-        // clock_t end = clock();
+
         SDL_Delay(1000 / 60);
         SDL_Flip(screen);
     }
