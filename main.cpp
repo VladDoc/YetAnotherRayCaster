@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 
-const int screenWidth = 1024;
+const int screenWidth = 800;
 const int screenHeight = 600;
 const int screenBits = 32;
 
@@ -18,7 +18,6 @@ const int mapWidth = 16;
 
 const float pi = 3.14159f;
 constexpr const float depth = sqrt(pow(mapHeight, 2) + pow(mapWidth, 2));
-
 
 const float walkingSpeed = 0.2f;
 const float rotatingSpeed = 0.1f;
@@ -68,7 +67,7 @@ struct Vector2D
     T y;
 };
 
-bool** fillUpTheMapToBeBox(int xSize = mapHeight, int ySize = mapWidth)
+bool** fillUpTheMapToBeBox(int xSize = mapWidth, int ySize = mapHeight)
 {
     bool* buffer = new bool[xSize * ySize];
     bool** map = new bool*[ySize];
@@ -82,7 +81,7 @@ bool** fillUpTheMapToBeBox(int xSize = mapHeight, int ySize = mapWidth)
         map[0][i] = true;
     }
 
-    for(int i = 0; i < ySize-2; ++i)
+    for(int i = 1; i < ySize-1; ++i)
     {
         for(int j = 0; j < xSize; ++j)
         {
@@ -132,14 +131,15 @@ int main( int argc, char** argv )
                             {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
                                           };
+    //bool** map = fillUpTheMapToBeBox();
 
     bool done = false;
     while (!done)
@@ -210,14 +210,14 @@ int main( int argc, char** argv )
                 int testX = (int)(player.x + eye.x * distanceToAWall);
                 int testY = (int)(player.y + eye.y * distanceToAWall);
 
-                wasWallHit = map[testY][testX]; // Apparently compiler doesn't give a crap
-                                                // about your if statement, so it's the only way around.
-                                                // Possible gcc bug?
-
                 if(testX < 0 || testX >= mapWidth || testY < 0 || testY >= mapHeight)
                 {
                     wasWallHit = true;
                     distanceToAWall = depth;
+                }   else {
+                    wasWallHit = map[testY][testX]; // Apparently compiler doesn't give a crap
+                                                    // about your if statement, so it's the only way around.
+                                                    // Possible gcc bug?
                 }
             }
 
@@ -228,11 +228,11 @@ int main( int argc, char** argv )
             {
                 if(i < ceilingHeight)
                 {
-                    Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade = ColorToUint(0 / (ceilingDistance * 2),
                                                0 / (ceilingDistance * 2),
                                                60 / (ceilingDistance * 2));
+                    Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = shade;
                 }
                 else if(i >= ceilingHeight && i <= floorHeight)
