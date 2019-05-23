@@ -26,10 +26,15 @@ constexpr const float FOV = pi / 4.0f;
 
 
 template <typename T>
-constexpr T clamp(T& value, T& min, T& max) {
-    if(value > max) return max;
-    else if(value < min) return min;
-    else return value;
+inline T clamp(T value, T min, T max) {
+    if(value > max) {
+            return max;
+    }
+    if(value < min) {
+            return min;
+    }
+
+    return value;
 }
 
 Uint32 ColorToUint(int R, int G, int B)
@@ -207,17 +212,18 @@ int main( int argc, char** argv )
             {
                 distanceToAWall += 0.01f;
 
-                int testX = (int)(player.x + eye.x * distanceToAWall);
-                int testY = (int)(player.y + eye.y * distanceToAWall);
+                Vector2D<int> test;
+                test.x = (int)(player.x + eye.x * distanceToAWall);
+                test.y = (int)(player.y + eye.y * distanceToAWall);
 
-                if(testX < 0 || testX >= mapWidth || testY < 0 || testY >= mapHeight)
+                if(test.x < 0 || test.x >= mapWidth || test.y < 0 || test.y >= mapHeight)
                 {
                     wasWallHit = true;
                     distanceToAWall = depth;
                 }   else {
-                    wasWallHit = map[testY][testX]; // Apparently compiler doesn't give a crap
-                                                    // about your if statement, so it's the only way around.
-                                                    // Possible gcc bug?
+                    wasWallHit = map[test.y][test.x]; // Apparently compiler doesn't give a crap
+                                                      // about your if statement, so it's the only way around.
+                                                      // Possible gcc bug?
                 }
             }
 
@@ -229,26 +235,31 @@ int main( int argc, char** argv )
                 if(i < ceilingHeight)
                 {
                     float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
-                    Uint32 shade = ColorToUint(0 / (ceilingDistance * 2),
-                                               0 / (ceilingDistance * 2),
-                                               60 / (ceilingDistance * 2));
+
+                    Uint32 shade = ColorToUint(clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
+                                               clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
+                                               clamp((int)(60 / (ceilingDistance * 2)), 0, 255));
+
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = shade;
                 }
                 else if(i >= ceilingHeight && i <= floorHeight)
                 {
-                    Uint32 shade = ColorToUint(50 * (1 + (distanceToAWall / 8)),
-                                               22 * (1 + (distanceToAWall / 8)),
-                                               5 * (1 + (distanceToAWall / 8)));
+                    Uint32 shade = ColorToUint(clamp((int)(50 * (1 + (distanceToAWall / 8))), 0, 255),
+                                               clamp((int)(22 * (1 + (distanceToAWall / 8))), 0, 255),
+                                               clamp((int)(5  * (1 + (distanceToAWall / 8))), 0, 255));
+
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = (Uint32)shade;
                 }
                 else
                 {
                     float floorDistance = 1.0f - (((float)i - screenHeight / 3.0f) / (float)screenHeight / 0.8f);
-                    Uint32 shade = ColorToUint(20 / (floorDistance * 2),
-                                               20 / (floorDistance * 2),
-                                               70 / (floorDistance * 2));
+
+                    Uint32 shade = ColorToUint(clamp((int)(20 / (floorDistance * 2)), 0, 255),
+                                               clamp((int)(20 / (floorDistance * 2)), 0, 255),
+                                               clamp((int)(70 / (floorDistance * 2)), 0, 255));
+
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = (Uint32)shade;
                 }
