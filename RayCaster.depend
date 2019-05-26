@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1558262117 source:d:\progs\cpp\sdl_test\main.cpp
+1558262117 source:d:\progs\cpp\RayCaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
@@ -197,7 +197,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1558862645 source:d:\progs\cpp\raycaster\main.cpp
+1558863308 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>

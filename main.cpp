@@ -244,7 +244,7 @@ int main( int argc, char** argv )
                     isRightHeld = true;
                 }
                 if(event.key.keysym.sym == SDLK_LSHIFT) {
-                    walkingSpeed *= 1.5f;
+                    walkingSpeed = defWalkingSpeed * 2;
                 }
                 break;
                 }
@@ -272,7 +272,7 @@ int main( int argc, char** argv )
                     isRightHeld = false;
                 }
                 if(event.key.keysym.sym == SDLK_LSHIFT) {
-                    walkingSpeed *= defWalkingSpeed;
+                    walkingSpeed = defWalkingSpeed;
                 }
                 break;
                 }
