@@ -19,10 +19,20 @@ const int mapWidth = 16;
 const float pi = 3.14159f;
 constexpr const float depth = sqrt(pow(mapHeight, 2) + pow(mapWidth, 2));
 
-const float walkingSpeed = 0.2f;
+const float defWalkingSpeed = 0.2f;
+float walkingSpeed = 0.2f;
 const float rotatingSpeed = 0.1f;
 
+const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
+
 constexpr const float FOV = pi / 4.0f;
+
+bool isUpHeld = false;
+bool isDownHeld = false;
+bool isLeftHeld = false;
+bool isRightHeld = false;
+bool isLStrafeHeld = false;
+bool isRStrafeHeld = false;
 
 
 template <typename T>
@@ -55,6 +65,28 @@ SDL_Color UintToColor(Uint32 color)
 	return retColor;
 }
 
+
+bool map[mapHeight][mapWidth] = {
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
+
+bool stars[screenHeight / 2][screenWidth];
+
 struct Player
 {
     float x;
@@ -72,36 +104,78 @@ struct Vector2D
     T y;
 };
 
-bool** fillUpTheMapToBeBox(int xSize = mapWidth, int ySize = mapHeight)
-{
-    bool* buffer = new bool[xSize * ySize];
-    bool** map = new bool*[ySize];
-
-    for(int i = 0; i < ySize; ++i) {
-        map[i] = &buffer[i * xSize];
+void doActions() {
+    if(isUpHeld) {
+        player.x += sinf(player.angle) * walkingSpeed;
+        player.y += cosf(player.angle) * walkingSpeed;
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.x -= sinf(player.angle) * walkingSpeed;
+            player.y -= cosf(player.angle) * walkingSpeed;
+        }
     }
+    if(isDownHeld) {
+        player.x -= sinf(player.angle) * walkingSpeed;
+        player.y -= cosf(player.angle) * walkingSpeed;
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.x += sinf(player.angle) * walkingSpeed;
+            player.y += cosf(player.angle) * walkingSpeed;
+        }
+    }
+    if(isLeftHeld) {
+        player.angle -= rotatingSpeed;
+    }
+    if(isRightHeld) {
+        player.angle += rotatingSpeed;
+    }
+    if(isLStrafeHeld) {
+        player.x -= sinf(player.angle + pi / 2) * walkingSpeed;
+        player.y -= cosf(player.angle + pi / 2) * walkingSpeed;
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.x += sinf(player.angle + pi / 2) * walkingSpeed;
+            player.y += cosf(player.angle + pi / 2) * walkingSpeed;
+        }
+    }
+    if(isRStrafeHeld) {
+        player.x += sinf(player.angle + pi / 2) * walkingSpeed;
+        player.y += cosf(player.angle + pi / 2) * walkingSpeed;
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.x -= sinf(player.angle + pi / 2) * walkingSpeed;
+            player.y -= cosf(player.angle + pi / 2) * walkingSpeed;
+        }
+    }
+}
 
-    for(int i = 0; i < xSize; ++i)
+void fillUpTheMapToBeBox()
+{
+    for(int i = 0; i < mapWidth; ++i)
     {
         map[0][i] = true;
     }
 
-    for(int i = 1; i < ySize-1; ++i)
+    for(int i = 1; i < mapHeight-1; ++i)
     {
-        for(int j = 0; j < xSize; ++j)
+        for(int j = 0; j < mapWidth; ++j)
         {
-            if(j == 0 || j == xSize-1) map[i][j] = true;
+            if(j == 0 || j == mapWidth-1) map[i][j] = true;
             else map[i][j] = false;
         }
     }
 
-    for(int i = 0; i < xSize; ++i)
+    for(int i = 0; i < mapWidth; ++i)
     {
-        map[ySize-1][i] = true;
+        map[mapHeight-1][i] = true;
     }
+}
 
-    return map;
-
+void fillUpTheStars() {
+    srand(0);
+    for(int i = 0; i < screenHeight / 2; ++i) {
+        for(int j = 0; j < screenWidth; ++j) {
+            if(!(rand() % 384)) {
+                stars[i][j] = true;
+            }
+        }
+    }
 }
 
 
@@ -126,26 +200,10 @@ int main( int argc, char** argv )
 
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
-    const bool map[mapHeight][mapWidth] = {
-                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-                                          };
     //bool** map = fillUpTheMapToBeBox();
 
+    fillUpTheStars();
+    SDL_ShowCursor(SDL_DISABLE);
     bool done = false;
     while (!done)
     {
@@ -165,36 +223,65 @@ int main( int argc, char** argv )
                 }
                 if (event.key.keysym.sym == SDLK_a)
                 {
-                    player.angle -= rotatingSpeed;
+                    isLStrafeHeld = true;
                 }
                 if (event.key.keysym.sym == SDLK_d)
                 {
-                    player.angle += rotatingSpeed;
+                    isRStrafeHeld = true;
                 }
-                if (event.key.keysym.sym == SDLK_s)
+                if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
                 {
-                    player.x -= sinf(player.angle) * walkingSpeed;
-                    player.y -= cosf(player.angle) * walkingSpeed;
-                    if(map[(int)player.y][(int)player.x] == 1)
-                    {
-                        player.x += sinf(player.angle) * walkingSpeed;
-                        player.y += cosf(player.angle) * walkingSpeed;
-                    }
+                    isDownHeld = true;
                 }
-                if(event.key.keysym.sym == SDLK_w)
+                if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
                 {
-                    player.x += sinf(player.angle) * walkingSpeed;
-                    player.y += cosf(player.angle) * walkingSpeed;
-                    if(map[(int)player.y][(int)player.x] == 1)
-                    {
-                        player.x -= sinf(player.angle) * walkingSpeed;
-                        player.y -= cosf(player.angle) * walkingSpeed;
-                    }
+                    isUpHeld = true;
+                }
+                if(event.key.keysym.sym == SDLK_LEFT) {
+                    isLeftHeld = true;
+                }
+                if(event.key.keysym.sym == SDLK_RIGHT) {
+                    isRightHeld = true;
+                }
+                if(event.key.keysym.sym == SDLK_LSHIFT) {
+                    walkingSpeed *= 1.5f;
                 }
                 break;
+                }
+                case SDL_KEYUP: {
+                if (event.key.keysym.sym == SDLK_a)
+                {
+                    isLStrafeHeld = false;
+                }
+                if (event.key.keysym.sym == SDLK_d)
+                {
+                    isRStrafeHeld = false;
+                }
+                if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
+                {
+                    isDownHeld = false;
+                }
+                if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
+                {
+                    isUpHeld = false;
+                }
+                if(event.key.keysym.sym == SDLK_LEFT) {
+                    isLeftHeld = false;
+                }
+                if(event.key.keysym.sym == SDLK_RIGHT) {
+                    isRightHeld = false;
+                }
+                if(event.key.keysym.sym == SDLK_LSHIFT) {
+                    walkingSpeed *= defWalkingSpeed;
+                }
+                break;
+                }
+                case SDL_MOUSEMOTION:
+                player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
+                break;
             }
-        }
-
+        SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
+        doActions();
         for(int j = 0; j < screenWidth; ++j)
         {
             float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
@@ -235,11 +322,16 @@ int main( int argc, char** argv )
                 if(i < ceilingHeight)
                 {
                     float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
-
-                    Uint32 shade = ColorToUint(clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
-                                               clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
-                                               clamp((int)(60 / (ceilingDistance * 2)), 0, 255));
-
+                    Uint32 shade;
+                    if(stars[i][j]) {
+                        shade = ColorToUint(clamp(rand() % 256, 150, 255),
+                                            clamp(rand() % 256, 150, 255),
+                                            clamp(rand() % 256, 150, 255));
+                    } else {
+                        shade = ColorToUint(clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
+                                            clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
+                                            clamp((int)(40 / (ceilingDistance * 2)), 0, 255));
+                    }
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = shade;
                 }
@@ -257,8 +349,8 @@ int main( int argc, char** argv )
                     float floorDistance = 1.0f - (((float)i - screenHeight / 3.0f) / (float)screenHeight / 0.8f);
 
                     Uint32 shade = ColorToUint(clamp((int)(20 / (floorDistance * 2)), 0, 255),
-                                               clamp((int)(20 / (floorDistance * 2)), 0, 255),
-                                               clamp((int)(70 / (floorDistance * 2)), 0, 255));
+                                               clamp((int)(70 / (floorDistance * 2)), 0, 255),
+                                               clamp((int)(20 / (floorDistance * 2)), 0, 255));
 
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = (Uint32)shade;
