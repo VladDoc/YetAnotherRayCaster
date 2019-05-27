@@ -168,7 +168,7 @@ void fillUpTheMapToBeBox()
 }
 
 void fillUpTheStars() {
-    srand(0);
+    srand(1);
     for(int i = 0; i < screenHeight / 2; ++i) {
         for(int j = 0; j < screenWidth; ++j) {
             if(!(rand() % 384)) {
@@ -189,9 +189,10 @@ int main( int argc, char** argv )
     }
 
     atexit(SDL_Quit);
-
+    SDL_putenv("SDL_VIDEO_WINDOW_POS=center");
     SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
-                                           SDL_HWSURFACE|SDL_DOUBLEBUF);
+                                           SDL_HWSURFACE | SDL_DOUBLEBUF);
+
     if (!screen)
     {
         printf("Unable to set %dx%dx%d video mode: %s\n", screenWidth, screenHeight, screenBits, SDL_GetError());
@@ -324,22 +325,22 @@ int main( int argc, char** argv )
                     float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade;
                     if(stars[i][j]) {
-                        shade = ColorToUint(clamp(rand() % 256, 150, 255),
-                                            clamp(rand() % 256, 150, 255),
-                                            clamp(rand() % 256, 150, 255));
+                        shade = ColorToUint(clamp(rand() % 256, 160, 255),
+                                            clamp(rand() % 256, 160, 255),
+                                            clamp(rand() % 256, 160, 255));
                     } else {
-                        shade = ColorToUint(clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
-                                            clamp((int)(0  / (ceilingDistance * 2)), 0, 255),
-                                            clamp((int)(40 / (ceilingDistance * 2)), 0, 255));
+                        shade = ColorToUint(clamp((int)(0  * (float)(i + 64) / 128), 0, 255),
+                                            clamp((int)(10 * (float)(i + 64) / 128), 0, 255),
+                                            clamp((int)(50 * (float)(i + 64) / 128), 0, 255));
                     }
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = shade;
                 }
                 else if(i >= ceilingHeight && i <= floorHeight)
                 {
-                    Uint32 shade = ColorToUint(clamp((int)(50 * (1 + (distanceToAWall / 8))), 0, 255),
-                                               clamp((int)(22 * (1 + (distanceToAWall / 8))), 0, 255),
-                                               clamp((int)(5  * (1 + (distanceToAWall / 8))), 0, 255));
+                    Uint32 shade = ColorToUint(clamp((int)(50 * (1 + (distanceToAWall / 4))), 0, 255),
+                                               clamp((int)(22 * (1 + (distanceToAWall / 4))), 0, 255),
+                                               clamp((int)(5  * (1 + (distanceToAWall / 4))), 0, 255));
 
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = (Uint32)shade;
