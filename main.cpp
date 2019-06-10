@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 
-const int screenWidth = 800;
+const int screenWidth = 1024;
 const int screenHeight = 600;
 const int screenBits = 32;
 
@@ -66,26 +66,29 @@ SDL_Color UintToColor(Uint32 color)
 }
 
 
-bool map[mapHeight][mapWidth] = {
-                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+Uint32 map[mapHeight][mapWidth] =
+{
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
 
 bool stars[screenHeight / 2][screenWidth];
+
+Uint32 defWallColor = ColorToUint(50, 20, 0);
 
 struct Player
 {
@@ -171,7 +174,7 @@ void fillUpTheStars() {
     srand(1);
     for(int i = 0; i < screenHeight / 2; ++i) {
         for(int j = 0; j < screenWidth; ++j) {
-            if(!(rand() % 384)) {
+            if(!(rand() % 256)) {
                 stars[i][j] = true;
             }
         }
@@ -206,8 +209,10 @@ int main( int argc, char** argv )
     fillUpTheStars();
     SDL_ShowCursor(SDL_DISABLE);
     bool done = false;
+    int count = 0;
     while (!done)
     {
+        int start = SDL_GetTicks();
         SDL_Event event;
         SDL_PollEvent(&event);
 
@@ -294,11 +299,12 @@ int main( int argc, char** argv )
             eye.x = sinf(ray);
             eye.y = cosf(ray);
 
-            bool wasWallHit = false;
+            int wasWallHit = 0;
+            SDL_Color wallColor;
 
             while(!wasWallHit && distanceToAWall < depth)
             {
-                distanceToAWall += 0.01f;
+                distanceToAWall += 1.0f / 64.0f;
 
                 Vector2D<int> test;
                 test.x = (int)(player.x + eye.x * distanceToAWall);
@@ -306,12 +312,18 @@ int main( int argc, char** argv )
 
                 if(test.x < 0 || test.x >= mapWidth || test.y < 0 || test.y >= mapHeight)
                 {
-                    wasWallHit = true;
+                    wasWallHit = 1;
                     distanceToAWall = depth;
+                    wallColor = UintToColor(defWallColor);
                 }   else {
-                    wasWallHit = map[test.y][test.x]; // Apparently compiler doesn't give a crap
-                                                      // about your if statement, so it's the only way around.
-                                                      // Possible gcc bug?
+                    wasWallHit = (int)map[test.y][test.x]; // Apparently compiler doesn't give a crap
+                                                           // about your if statement, so it's the only way around.
+                                                           // Possible gcc bug?
+                    if(wasWallHit == 1) {
+                        wallColor = UintToColor(defWallColor);
+                    } else {
+                        wallColor = UintToColor(map[test.y][test.x]);
+                    }
                 }
             }
 
@@ -322,12 +334,12 @@ int main( int argc, char** argv )
             {
                 if(i < ceilingHeight)
                 {
-                    float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
+                    //float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade;
                     if(stars[i][j]) {
-                        shade = ColorToUint(clamp(rand() % 256, 160, 255),
-                                            clamp(rand() % 256, 160, 255),
-                                            clamp(rand() % 256, 160, 255));
+                        shade = ColorToUint(clamp(rand() % 256, 170, 255),
+                                            clamp(rand() % 256, 170, 255),
+                                            clamp(rand() % 256, 170, 255));
                     } else {
                         shade = ColorToUint(clamp((int)(0  * (float)(i + 64) / 128), 0, 255),
                                             clamp((int)(10 * (float)(i + 64) / 128), 0, 255),
@@ -336,31 +348,37 @@ int main( int argc, char** argv )
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = shade;
                 }
-                else if(i >= ceilingHeight && i <= floorHeight)
+                else if(i >= ceilingHeight && i < floorHeight)
                 {
-                    Uint32 shade = ColorToUint(clamp((int)(50 * (1 + (distanceToAWall / 4))), 0, 255),
-                                               clamp((int)(22 * (1 + (distanceToAWall / 4))), 0, 255),
-                                               clamp((int)(5  * (1 + (distanceToAWall / 4))), 0, 255));
+                    Uint32 shade = ColorToUint(clamp((int)(wallColor.r * (1 + (distanceToAWall / 3))), 0, 255),
+                                               clamp((int)(wallColor.g * (1 + (distanceToAWall / 3))), 0, 255),
+                                               clamp((int)(wallColor.b * (1 + (distanceToAWall / 3))), 0, 255));
 
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = (Uint32)shade;
                 }
                 else
                 {
-                    float floorDistance = 1.0f - (((float)i - screenHeight / 3.0f) / (float)screenHeight / 0.8f);
 
-                    Uint32 shade = ColorToUint(clamp((int)(20 / (floorDistance * 2)), 0, 255),
-                                               clamp((int)(70 / (floorDistance * 2)), 0, 255),
-                                               clamp((int)(20 / (floorDistance * 2)), 0, 255));
+                    Uint32 shade = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + 128) / 128), 0, 200),
+                                               clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
+                                               clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
 
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
                     *pixel = (Uint32)shade;
                 }
             }
         }
-
-        SDL_Delay(1000 / 60);
+        int end = SDL_GetTicks();
+        //SDL_Delay(1000 / 60 - clamp((int)(end - start), 0, 1000 / 60));
+        char fps[128];
+        sprintf(fps, "%d", 1000 / clamp(end - start, 1, INT_MAX));
+        if(count == 16) {
+            SDL_WM_SetCaption(fps, NULL);
+            count = 0;
+        }
         SDL_Flip(screen);
+        ++count;
     }
 
 return 0;
