@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 
-const int screenWidth = 1024;
+const int screenWidth = 800;
 const int screenHeight = 600;
 const int screenBits = 32;
 
@@ -26,6 +26,8 @@ const float rotatingSpeed = 0.1f;
 const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
 constexpr const float FOV = pi / 4.0f;
+
+const float targetSpeed = 30.0f;
 
 bool isUpHeld = false;
 bool isDownHeld = false;
@@ -88,7 +90,7 @@ Uint32 map[mapHeight][mapWidth] =
 
 bool stars[screenHeight / 2][screenWidth];
 
-Uint32 defWallColor = ColorToUint(50, 20, 0);
+Uint32 defWallColor = ColorToUint(55, 20, 0);
 
 struct Player
 {
@@ -107,43 +109,51 @@ struct Vector2D
     T y;
 };
 
-void doActions() {
+void doActions(int frameTime) {
     if(isUpHeld) {
-        player.x += sinf(player.angle) * walkingSpeed;
-        player.y += cosf(player.angle) * walkingSpeed;
+        player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         if(map[(int)player.y][(int)player.x] == 1)  {
-            player.x -= sinf(player.angle) * walkingSpeed;
-            player.y -= cosf(player.angle) * walkingSpeed;
+            player.x -= sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        }
+        player.y += cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.y -= cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         }
     }
     if(isDownHeld) {
-        player.x -= sinf(player.angle) * walkingSpeed;
-        player.y -= cosf(player.angle) * walkingSpeed;
+        player.x -= sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         if(map[(int)player.y][(int)player.x] == 1)  {
-            player.x += sinf(player.angle) * walkingSpeed;
-            player.y += cosf(player.angle) * walkingSpeed;
+            player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        }
+        player.y -= cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.y += cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         }
     }
     if(isLeftHeld) {
-        player.angle -= rotatingSpeed;
+        player.angle -= rotatingSpeed  * (frameTime / targetSpeed);
     }
     if(isRightHeld) {
-        player.angle += rotatingSpeed;
+        player.angle += rotatingSpeed  * (frameTime / targetSpeed);
     }
     if(isLStrafeHeld) {
-        player.x -= sinf(player.angle + pi / 2) * walkingSpeed;
-        player.y -= cosf(player.angle + pi / 2) * walkingSpeed;
+        player.x -= sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         if(map[(int)player.y][(int)player.x] == 1)  {
-            player.x += sinf(player.angle + pi / 2) * walkingSpeed;
-            player.y += cosf(player.angle + pi / 2) * walkingSpeed;
+            player.x += sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+        }
+        player.y -= cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.y += cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         }
     }
     if(isRStrafeHeld) {
-        player.x += sinf(player.angle + pi / 2) * walkingSpeed;
-        player.y += cosf(player.angle + pi / 2) * walkingSpeed;
+        player.x += sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         if(map[(int)player.y][(int)player.x] == 1)  {
-            player.x -= sinf(player.angle + pi / 2) * walkingSpeed;
-            player.y -= cosf(player.angle + pi / 2) * walkingSpeed;
+            player.x -= sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+        }
+        player.y += cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+        if(map[(int)player.y][(int)player.x] == 1)  {
+            player.y -= cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         }
     }
 }
@@ -206,6 +216,8 @@ int main( int argc, char** argv )
 
     //bool** map = fillUpTheMapToBeBox();
 
+    char fps[80];
+    int frameTime = 20;
     fillUpTheStars();
     SDL_ShowCursor(SDL_DISABLE);
     bool done = false;
@@ -287,7 +299,7 @@ int main( int argc, char** argv )
                 break;
             }
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
-        doActions();
+        doActions(frameTime);
         for(int j = 0; j < screenWidth; ++j)
         {
             float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
@@ -337,9 +349,9 @@ int main( int argc, char** argv )
                     //float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade;
                     if(stars[i][j]) {
-                        shade = ColorToUint(clamp(rand() % 256, 170, 255),
-                                            clamp(rand() % 256, 170, 255),
-                                            clamp(rand() % 256, 170, 255));
+                        shade = ColorToUint(clamp(rand() % 256, 160, 255),
+                                            clamp(rand() % 256, 160, 255),
+                                            clamp(rand() % 256, 160, 255));
                     } else {
                         shade = ColorToUint(clamp((int)(0  * (float)(i + 64) / 128), 0, 255),
                                             clamp((int)(10 * (float)(i + 64) / 128), 0, 255),
@@ -371,9 +383,9 @@ int main( int argc, char** argv )
         }
         int end = SDL_GetTicks();
         //SDL_Delay(1000 / 60 - clamp((int)(end - start), 0, 1000 / 60));
-        char fps[128];
-        sprintf(fps, "%d", 1000 / clamp(end - start, 1, INT_MAX));
+        frameTime = end - start;
         if(count == 16) {
+            sprintf(fps, "%d", 1000 / clamp(end - start, 1, INT_MAX));
             SDL_WM_SetCaption(fps, NULL);
             count = 0;
         }
