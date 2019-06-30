@@ -3,14 +3,14 @@
 #include <iostream>
 #include <ctime>
 #include <cmath>
+#include <cstdio>
+#include <vector>
 
 #include <SDL/SDL.h>
 
-#include <stdio.h>
 
-
-const int screenWidth = 800;
-const int screenHeight = 600;
+const int screenWidth = 1355;
+const int screenHeight = 750;
 const int screenBits = 32;
 
 const int mapHeight = 16;
@@ -25,7 +25,7 @@ const float rotatingSpeed = 0.1f;
 
 const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
-constexpr const float FOV = pi / 4.0f;
+constexpr const float FOV = pi / (6.0f *((float)screenHeight / (float)screenWidth));
 
 const float targetSpeed = 30.0f;
 
@@ -36,6 +36,8 @@ bool isRightHeld = false;
 bool isLStrafeHeld = false;
 bool isRStrafeHeld = false;
 
+
+std::vector<SDL_Surface*> textures;
 
 template <typename T>
 inline T clamp(T value, T min, T max) {
@@ -67,14 +69,54 @@ SDL_Color UintToColor(Uint32 color)
 	return retColor;
 }
 
+float getFractialPart(float arg) {
+    int wholePart = (int)arg;
+    return arg - wholePart;
+}
 
-Uint32 map[mapHeight][mapWidth] =
+SDL_Color defSkyColor;
+SDL_Color skyColor;
+
+class MapBlock
+{
+public:
+    Uint8 r;
+    Uint8 g;
+    Uint8 b;
+    Uint8 texture;
+    MapBlock(int red, int green, int blue) :
+        r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0) { }
+
+    MapBlock(int textureType) : texture((Uint8)textureType) { }
+
+    inline bool getIsTexture() {
+        return texture >= 2;
+    }
+
+    inline int getTextureIndex() {
+        return (int)(texture)-2;
+    }
+
+    SDL_Color getColor(){
+        SDL_Color retColor;
+        retColor.r = r;
+        retColor.g = g;
+        retColor.b = b;
+        return retColor;
+    }
+
+    inline bool isEmpty() {
+        return !(r || g || b || texture);
+    }
+};
+
+MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), ColorToUint(20, 0, 50), 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), ColorToUint(50, 0, 0), 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -90,7 +132,7 @@ Uint32 map[mapHeight][mapWidth] =
 
 bool stars[screenHeight / 2][screenWidth];
 
-Uint32 defWallColor = ColorToUint(55, 20, 0);
+Uint32 defWallColor = ColorToUint(45, 20, 0);
 
 struct Player
 {
@@ -112,21 +154,21 @@ struct Vector2D
 void doActions(int frameTime) {
     if(isUpHeld) {
         player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.x -= sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         }
         player.y += cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.y -= cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         }
     }
     if(isDownHeld) {
         player.x -= sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         }
         player.y -= cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.y += cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         }
     }
@@ -138,21 +180,21 @@ void doActions(int frameTime) {
     }
     if(isLStrafeHeld) {
         player.x -= sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.x += sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         }
         player.y -= cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.y += cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         }
     }
     if(isRStrafeHeld) {
         player.x += sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.x -= sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         }
         player.y += cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(map[(int)player.y][(int)player.x] == 1)  {
+        if(!map[(int)player.y][(int)player.x].isEmpty())  {
             player.y -= cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
         }
     }
@@ -191,10 +233,40 @@ void fillUpTheStars() {
     }
 }
 
-
-int main( int argc, char** argv )
+void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
 {
-    // initialize SDL video
+    SDL_Surface* surf = SDL_LoadBMP(filename);
+    SDL_Surface* texture = SDL_DisplayFormat(surf);
+    if(!surf || !texture) {
+        printf("Unable to load textures. Exiting.....");
+        system("PAUSE");
+        exit(-1);
+    }
+    txt.push_back(texture);
+}
+
+Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
+    return (Uint32*)(surf->pixels + i * surf->pitch + j * sizeof(Uint32));
+}
+
+void loadTextures() {
+    loadTexture(textures, "Desert.bmp");
+}
+
+void freeTextures() {
+    for(auto i = textures.begin(); i != textures.end(); i++) {
+        SDL_FreeSurface(*i);
+    }
+}
+
+int main( int argc, char** argv) {
+
+    defSkyColor.r = 0;
+    defSkyColor.g = 10;
+    defSkyColor.b = 50;
+
+    skyColor = defSkyColor;
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
@@ -214,13 +286,18 @@ int main( int argc, char** argv )
 
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
-    //bool** map = fillUpTheMapToBeBox();
+    loadTextures();
 
+    if(textures.empty()) {
+        printf("\nCrap fell onto fan\n");
+        system("PAUSE");
+    }
     char fps[80];
     int frameTime = 20;
     fillUpTheStars();
     SDL_ShowCursor(SDL_DISABLE);
     bool done = false;
+    bool wasSkyColorChangePressed = false;
     int count = 0;
     while (!done)
     {
@@ -229,77 +306,111 @@ int main( int argc, char** argv )
         SDL_PollEvent(&event);
 
         switch (event.type)
-            {
-            case SDL_QUIT:
-                done = true;
-                break;
+        {
+        case SDL_QUIT:
+            done = true;
+            break;
 
-            case SDL_KEYDOWN:
+        case SDL_KEYDOWN:
+        {
+            if (event.key.keysym.sym == SDLK_ESCAPE)
             {
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    done = true;
-                }
-                if (event.key.keysym.sym == SDLK_a)
-                {
-                    isLStrafeHeld = true;
-                }
-                if (event.key.keysym.sym == SDLK_d)
-                {
-                    isRStrafeHeld = true;
-                }
-                if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
-                {
-                    isDownHeld = true;
-                }
-                if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
-                {
-                    isUpHeld = true;
-                }
-                if(event.key.keysym.sym == SDLK_LEFT) {
-                    isLeftHeld = true;
-                }
-                if(event.key.keysym.sym == SDLK_RIGHT) {
-                    isRightHeld = true;
-                }
-                if(event.key.keysym.sym == SDLK_LSHIFT) {
-                    walkingSpeed = defWalkingSpeed * 2;
-                }
-                break;
-                }
-                case SDL_KEYUP: {
-                if (event.key.keysym.sym == SDLK_a)
-                {
-                    isLStrafeHeld = false;
-                }
-                if (event.key.keysym.sym == SDLK_d)
-                {
-                    isRStrafeHeld = false;
-                }
-                if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
-                {
-                    isDownHeld = false;
-                }
-                if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
-                {
-                    isUpHeld = false;
-                }
-                if(event.key.keysym.sym == SDLK_LEFT) {
-                    isLeftHeld = false;
-                }
-                if(event.key.keysym.sym == SDLK_RIGHT) {
-                    isRightHeld = false;
-                }
-                if(event.key.keysym.sym == SDLK_LSHIFT) {
-                    walkingSpeed = defWalkingSpeed;
-                }
-                break;
-                }
-                case SDL_MOUSEMOTION:
-                player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
-                break;
+                done = true;
             }
+            if (event.key.keysym.sym == SDLK_a)
+            {
+                isLStrafeHeld = true;
+            }
+            if (event.key.keysym.sym == SDLK_d)
+            {
+                isRStrafeHeld = true;
+            }
+            if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
+            {
+                isDownHeld = true;
+            }
+            if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
+            {
+                isUpHeld = true;
+            }
+            if(event.key.keysym.sym == SDLK_LEFT)
+            {
+                isLeftHeld = true;
+            }
+            if(event.key.keysym.sym == SDLK_RIGHT)
+            {
+                isRightHeld = true;
+            }
+            if(event.key.keysym.sym == SDLK_LSHIFT)
+            {
+                walkingSpeed = defWalkingSpeed * 2;
+            }
+            if(event.key.keysym.sym == SDLK_PAGEUP)
+            {
+                if(!wasSkyColorChangePressed)
+                {
+                    skyColor.r = rand() % 50;
+                    skyColor.g = rand() % 50;
+                    skyColor.b = rand() % 50;
+                    wasSkyColorChangePressed = true;
+                }
+            }
+            if(event.key.keysym.sym == SDLK_HOME)
+            {
+                skyColor = defSkyColor;
+            }
+            if(event.key.keysym.sym == SDLK_END)
+            {
+                skyColor.r = 0;
+                skyColor.g = 0;
+                skyColor.b = 0;
+            }
+            break;
+        }
+        case SDL_KEYUP:
+        {
+            if (event.key.keysym.sym == SDLK_a)
+            {
+                isLStrafeHeld = false;
+            }
+            if (event.key.keysym.sym == SDLK_d)
+            {
+                isRStrafeHeld = false;
+            }
+            if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
+            {
+                isDownHeld = false;
+            }
+            if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
+            {
+                isUpHeld = false;
+            }
+            if(event.key.keysym.sym == SDLK_LEFT)
+            {
+                isLeftHeld = false;
+            }
+            if(event.key.keysym.sym == SDLK_RIGHT)
+            {
+                isRightHeld = false;
+            }
+            if(event.key.keysym.sym == SDLK_LSHIFT)
+            {
+                walkingSpeed = defWalkingSpeed;
+            }
+            if(event.key.keysym.sym == SDLK_PAGEUP)
+            {
+                wasSkyColorChangePressed = false;
+            }
+            break;
+        }
+        case SDL_MOUSEMOTION:
+            player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
+            break;
+        }
+
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
         doActions(frameTime);
+
         for(int j = 0; j < screenWidth; ++j)
         {
             float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
@@ -311,6 +422,8 @@ int main( int argc, char** argv )
             eye.x = sinf(ray);
             eye.y = cosf(ray);
 
+            Vector2D<float> test;
+
             int wasWallHit = 0;
             SDL_Color wallColor;
 
@@ -318,9 +431,8 @@ int main( int argc, char** argv )
             {
                 distanceToAWall += 1.0f / 64.0f;
 
-                Vector2D<int> test;
-                test.x = (int)(player.x + eye.x * distanceToAWall);
-                test.y = (int)(player.y + eye.y * distanceToAWall);
+                test.x = player.x + eye.x * distanceToAWall;
+                test.y = player.y + eye.y * distanceToAWall;
 
                 if(test.x < 0 || test.x >= mapWidth || test.y < 0 || test.y >= mapHeight)
                 {
@@ -328,13 +440,13 @@ int main( int argc, char** argv )
                     distanceToAWall = depth;
                     wallColor = UintToColor(defWallColor);
                 }   else {
-                    wasWallHit = (int)map[test.y][test.x]; // Apparently compiler doesn't give a crap
-                                                           // about your if statement, so it's the only way around.
-                                                           // Possible gcc bug?
-                    if(wasWallHit == 1) {
+                    wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty(); // Apparently compiler doesn't give a crap
+                                                                                // about your if statement, so it's the only way around.
+                                                                                // Possible gcc bug?
+                    if(map[(int)test.y][(int)test.x].texture == 1) {
                         wallColor = UintToColor(defWallColor);
                     } else {
-                        wallColor = UintToColor(map[test.y][test.x]);
+                        wallColor = map[(int)test.y][(int)test.x].getColor();
                     }
                 }
             }
@@ -349,24 +461,45 @@ int main( int argc, char** argv )
                     //float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade;
                     if(stars[i][j]) {
-                        shade = ColorToUint(clamp(rand() % 256, 160, 255),
-                                            clamp(rand() % 256, 160, 255),
-                                            clamp(rand() % 256, 160, 255));
+                        shade = ColorToUint(clamp(rand() % 256, 165, 255),
+                                            clamp(rand() % 256, 165, 255),
+                                            clamp(rand() % 256, 165, 255));
                     } else {
-                        shade = ColorToUint(clamp((int)(0  * (float)(i + 64) / 128), 0, 255),
-                                            clamp((int)(10 * (float)(i + 64) / 128), 0, 255),
-                                            clamp((int)(50 * (float)(i + 64) / 128), 0, 255));
+                        shade = ColorToUint(clamp((int)(skyColor.r * (float)(i + 64) / 128), 0, 255),
+                                            clamp((int)(skyColor.g * (float)(i + 64) / 128), 0, 255),
+                                            clamp((int)(skyColor.b * (float)(i + 64) / 128), 0, 255));
                     }
-                    Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
+                    Uint32* pixel = getTexturePixel(screen, i, j);
                     *pixel = shade;
                 }
                 else if(i >= ceilingHeight && i < floorHeight)
                 {
-                    Uint32 shade = ColorToUint(clamp((int)(wallColor.r * (1 + (distanceToAWall / 3))), 0, 255),
-                                               clamp((int)(wallColor.g * (1 + (distanceToAWall / 3))), 0, 255),
-                                               clamp((int)(wallColor.b * (1 + (distanceToAWall / 3))), 0, 255));
-
                     Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
+                    Uint32 shade;
+                    MapBlock currentBlock = map[(int)test.y][(int)test.x];
+                    if(currentBlock.getIsTexture()) {
+                        int wallSizeOnScreen = floorHeight - ceilingHeight;
+                        bool isHorisontal = false;
+                        float checkY = test.y;
+                        SDL_Surface* texture = textures.at(currentBlock.getTextureIndex());
+                        Uint32* color = &defWallColor;
+                        if(map[(int)(checkY - 1.0f / 128.0f)][(int)test.x].isEmpty() ||
+                           map[(int)(checkY + 1.0f / 128.0f)][(int)test.x].isEmpty()   ) {
+                                isHorisontal = true;
+                           }
+                        if(isHorisontal) {
+                            color = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
+                                                             (int)(getFractialPart(test.x) * (float)texture->w));
+                        } else {
+                            color = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
+                                                             (int)(getFractialPart(test.y) * (float)texture->w));
+                        }
+                        shade = *color;
+                    } else {
+                    shade = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
+                                        clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
+                                        clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
+                    }
                     *pixel = (Uint32)shade;
                 }
                 else
@@ -376,7 +509,7 @@ int main( int argc, char** argv )
                                                clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
                                                clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
 
-                    Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
+                    Uint32* pixel = getTexturePixel(screen, i, j);
                     *pixel = (Uint32)shade;
                 }
             }
@@ -392,6 +525,7 @@ int main( int argc, char** argv )
         SDL_Flip(screen);
         ++count;
     }
-
+freeTextures();
+SDL_free(screen);
 return 0;
 }
