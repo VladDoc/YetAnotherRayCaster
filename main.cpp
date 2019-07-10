@@ -9,8 +9,8 @@
 #include <SDL/SDL.h>
 
 
-const int screenWidth = 1355;
-const int screenHeight = 750;
+const int screenWidth = 1024;
+const int screenHeight = 600;
 const int screenBits = 32;
 
 const int mapHeight = 16;
@@ -35,6 +35,9 @@ bool isLeftHeld = false;
 bool isRightHeld = false;
 bool isLStrafeHeld = false;
 bool isRStrafeHeld = false;
+
+bool shouldStarsBeRendered = true;
+bool isFloorASky = false;
 
 
 std::vector<SDL_Surface*> textures;
@@ -93,6 +96,20 @@ public:
         return texture >= 2;
     }
 
+    void setDefault() {
+        r = 0;
+        g = 0;
+        b = 0;
+        texture = 1;
+    }
+
+    void setEmpty() {
+        r = 0;
+        g = 0;
+        b = 0;
+        texture = 0;
+    }
+
     inline int getTextureIndex() {
         return (int)(texture)-2;
     }
@@ -112,25 +129,25 @@ public:
 
 MapBlock map[mapHeight][mapWidth] =
 {
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
 
-bool stars[screenHeight / 2][screenWidth];
+bool stars[screenHeight][screenWidth];
 
 Uint32 defWallColor = ColorToUint(45, 20, 0);
 
@@ -200,31 +217,31 @@ void doActions(int frameTime) {
     }
 }
 
-void fillUpTheMapToBeBox()
+void fillUpTheMapToBeBox(MapBlock** aMap)
 {
     for(int i = 0; i < mapWidth; ++i)
     {
-        map[0][i] = true;
+        aMap[0][i].setDefault();
     }
 
     for(int i = 1; i < mapHeight-1; ++i)
     {
         for(int j = 0; j < mapWidth; ++j)
         {
-            if(j == 0 || j == mapWidth-1) map[i][j] = true;
-            else map[i][j] = false;
+            if(j == 0 || j == mapWidth-1) aMap[i][j].setDefault();
+            else aMap[i][j].setEmpty();
         }
     }
 
     for(int i = 0; i < mapWidth; ++i)
     {
-        map[mapHeight-1][i] = true;
+        map[mapHeight-1][i].setDefault();
     }
 }
 
 void fillUpTheStars() {
     srand(1);
-    for(int i = 0; i < screenHeight / 2; ++i) {
+    for(int i = 0; i < screenHeight; ++i) {
         for(int j = 0; j < screenWidth; ++j) {
             if(!(rand() % 256)) {
                 stars[i][j] = true;
@@ -251,6 +268,7 @@ Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
 
 void loadTextures() {
     loadTexture(textures, "Desert.bmp");
+    loadTexture(textures, "wall.bmp");
 }
 
 void freeTextures() {
@@ -298,6 +316,7 @@ int main( int argc, char** argv) {
     SDL_ShowCursor(SDL_DISABLE);
     bool done = false;
     bool wasSkyColorChangePressed = false;
+    bool wasSkyIsAFloorPressed = false;
     int count = 0;
     while (!done)
     {
@@ -365,6 +384,18 @@ int main( int argc, char** argv) {
                 skyColor.g = 0;
                 skyColor.b = 0;
             }
+            if(event.key.keysym.sym == SDLK_DELETE) {
+                shouldStarsBeRendered = false;
+            }
+            if(event.key.keysym.sym == SDLK_INSERT) {
+                shouldStarsBeRendered = true;
+            }
+            if(event.key.keysym.sym == SDLK_PAGEDOWN) {
+                 if(!wasSkyIsAFloorPressed) {
+                    isFloorASky ? isFloorASky = false : isFloorASky = true;
+                    wasSkyIsAFloorPressed = true;
+                 }
+             }
             break;
         }
         case SDL_KEYUP:
@@ -401,6 +432,9 @@ int main( int argc, char** argv) {
             {
                 wasSkyColorChangePressed = false;
             }
+            if(event.key.keysym.sym == SDLK_PAGEDOWN) {
+                wasSkyIsAFloorPressed = false;
+            }
             break;
         }
         case SDL_MOUSEMOTION:
@@ -429,7 +463,7 @@ int main( int argc, char** argv) {
 
             while(!wasWallHit && distanceToAWall < depth)
             {
-                distanceToAWall += 1.0f / 64.0f;
+                distanceToAWall += 1.0f / 128.0f;
 
                 test.x = player.x + eye.x * distanceToAWall;
                 test.y = player.y + eye.y * distanceToAWall;
@@ -443,6 +477,7 @@ int main( int argc, char** argv) {
                     wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty(); // Apparently compiler doesn't give a crap
                                                                                 // about your if statement, so it's the only way around.
                                                                                 // Possible gcc bug?
+
                     if(map[(int)test.y][(int)test.x].texture == 1) {
                         wallColor = UintToColor(defWallColor);
                     } else {
@@ -451,7 +486,7 @@ int main( int argc, char** argv) {
                 }
             }
 
-            int ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);
+            int ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);// + abs(j  - screenWidth / 2);
             int floorHeight = screenHeight - ceilingHeight;
 
             for(int i = 0; i < screenHeight; ++i)
@@ -460,7 +495,7 @@ int main( int argc, char** argv) {
                 {
                     //float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade;
-                    if(stars[i][j]) {
+                    if(stars[i][j] && shouldStarsBeRendered) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
@@ -494,7 +529,11 @@ int main( int argc, char** argv) {
                             color = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
                                                              (int)(getFractialPart(test.y) * (float)texture->w));
                         }
-                        shade = *color;
+                        SDL_Color pixelRGB = UintToColor(*color);
+
+                        shade = ColorToUint(clamp((int)((pixelRGB.r / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.r / 3, clamp((int)(pixelRGB.r * 1.2), 0, 255)),
+                                            clamp((int)((pixelRGB.g / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.g / 3, clamp((int)(pixelRGB.g * 1.2), 0, 255)),
+                                            clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.2), 0, 255)));
                     } else {
                     shade = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
                                         clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
@@ -504,10 +543,22 @@ int main( int argc, char** argv) {
                 }
                 else
                 {
-
-                    Uint32 shade = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + 128) / 128), 0, 200),
-                                               clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
-                                               clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
+                    Uint32 shade;
+                    if(!isFloorASky) {
+                        shade = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + 128) / 128), 0, 200),
+                                            clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
+                                            clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
+                    } else {
+                        if(stars[i][j] && shouldStarsBeRendered) {
+                            shade = ColorToUint(clamp(rand() % 256, 165, 255),
+                                                clamp(rand() % 256, 165, 255),
+                                                clamp(rand() % 256, 165, 255));
+                        } else {
+                            shade = ColorToUint(clamp((int)(skyColor.r * (float)(i + 64) / 128), 0, 255),
+                                                clamp((int)(skyColor.g * (float)(i + 64) / 128), 0, 255),
+                                                clamp((int)(skyColor.b * (float)(i + 64) / 128), 0, 255));
+                        }
+                    }
 
                     Uint32* pixel = getTexturePixel(screen, i, j);
                     *pixel = (Uint32)shade;
