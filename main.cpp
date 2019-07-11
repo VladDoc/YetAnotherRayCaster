@@ -9,7 +9,9 @@
 #include <SDL/SDL.h>
 
 
-const int screenWidth = 1024;
+//#define TEXTURE_GRADIENT 1
+
+const int screenWidth = 800;
 const int screenHeight = 600;
 const int screenBits = 32;
 
@@ -25,7 +27,7 @@ const float rotatingSpeed = 0.1f;
 
 const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
-constexpr const float FOV = pi / (6.0f *((float)screenHeight / (float)screenWidth));
+constexpr const float FOV = pi / (6.4f * ((float)screenHeight / (float)screenWidth));
 
 const float targetSpeed = 30.0f;
 
@@ -368,9 +370,9 @@ int main( int argc, char** argv) {
             {
                 if(!wasSkyColorChangePressed)
                 {
-                    skyColor.r = rand() % 50;
-                    skyColor.g = rand() % 50;
-                    skyColor.b = rand() % 50;
+                    skyColor.r = rand() % 25;
+                    skyColor.g = rand() % 25;
+                    skyColor.b = rand() % 25;
                     wasSkyColorChangePressed = true;
                 }
             }
@@ -463,7 +465,7 @@ int main( int argc, char** argv) {
 
             while(!wasWallHit && distanceToAWall < depth)
             {
-                distanceToAWall += 1.0f / 128.0f;
+                distanceToAWall += 1.0f / 64.0f;
 
                 test.x = player.x + eye.x * distanceToAWall;
                 test.y = player.y + eye.y * distanceToAWall;
@@ -486,6 +488,8 @@ int main( int argc, char** argv) {
                 }
             }
 
+            distanceToAWall *= cosf(ray - player.angle - (FOV / (screenWidth * 8))); // You might ask: 'why 8?'. But it seems to give best results yet.
+
             int ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);// + abs(j  - screenWidth / 2);
             int floorHeight = screenHeight - ceilingHeight;
 
@@ -493,7 +497,6 @@ int main( int argc, char** argv) {
             {
                 if(i < ceilingHeight)
                 {
-                    //float ceilingDistance = 1.0f + (((float)i - screenHeight / 2.0f) / (float)screenHeight / 0.8f);
                     Uint32 shade;
                     if(stars[i][j] && shouldStarsBeRendered) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
@@ -509,7 +512,8 @@ int main( int argc, char** argv) {
                 }
                 else if(i >= ceilingHeight && i < floorHeight)
                 {
-                    Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
+                    //Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
+                    Uint32* pixel = getTexturePixel(screen, i, j);
                     Uint32 shade;
                     MapBlock currentBlock = map[(int)test.y][(int)test.x];
                     if(currentBlock.getIsTexture()) {
@@ -529,11 +533,15 @@ int main( int argc, char** argv) {
                             color = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
                                                              (int)(getFractialPart(test.y) * (float)texture->w));
                         }
+                        #ifdef TEXTURE_GRADIENT
                         SDL_Color pixelRGB = UintToColor(*color);
 
                         shade = ColorToUint(clamp((int)((pixelRGB.r / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.r / 3, clamp((int)(pixelRGB.r * 1.2), 0, 255)),
                                             clamp((int)((pixelRGB.g / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.g / 3, clamp((int)(pixelRGB.g * 1.2), 0, 255)),
                                             clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.2), 0, 255)));
+                        #else
+                        shade = *color;
+                        #endif
                     } else {
                     shade = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
                                         clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
