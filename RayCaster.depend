@@ -197,14 +197,16 @@
 	"begin_code.h"
 	"close_code.h"
 
-1563078526 source:d:\progs\cpp\raycaster\main.cpp
+1563087365 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
 	<cmath>
 	<cstdio>
 	<vector>
+	<thread>
 	<SDL/SDL.h>
+	<omp.h>
 
 1325742239 d:\sdl-1.2.15\include\sdl\sdl_types.h
 	"SDL_stdinc.h"
