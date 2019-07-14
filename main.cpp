@@ -44,6 +44,10 @@ bool isRStrafeHeld = false;
 bool shouldStarsBeRendered = true;
 bool isFloorASky = false;
 
+static bool done = false;
+static bool wasSkyColorChangePressed = false;
+static bool wasSkyIsAFloorPressed = false;
+
 
 std::vector<SDL_Surface*> textures;
 std::vector<SDL_Surface*> lightmaps;
@@ -312,59 +316,8 @@ void freeTextures() {
     }
 }
 
-int main(int argc, char** argv) {
-
-    defSkyColor.r = 0;
-    defSkyColor.g = 10;
-    defSkyColor.b = 50;
-
-    skyColor = defSkyColor;
-
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    {
-        printf( "Unable to init SDL: %s\n", SDL_GetError() );
-        return 1;
-    }
-
-    atexit(SDL_Quit);
-
-    char env[80];
-    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", (SDL_GetVideoInfo()->current_w - screenWidth) / 2, 27);
-
-    SDL_putenv(env);
-    SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
-                                           SDL_HWSURFACE | SDL_DOUBLEBUF);
-
-    if (!screen)
-    {
-        printf("Unable to set %dx%dx%d video mode: %s\n", screenWidth, screenHeight, screenBits, SDL_GetError());
-        return 1;
-    }
-
-    SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
-
-    loadTextures();
-    loadLightmaps();
-
-    if(textures.empty() || lightmaps.empty()) {
-        printf("\nCrap fell onto fan\n");
-        system("PAUSE");
-    }
-    char fps[80];
-    int frameTime = 20;
-    fillUpTheStars();
-    SDL_ShowCursor(SDL_DISABLE);
-    bool done = false;
-    bool wasSkyColorChangePressed = false;
-    bool wasSkyIsAFloorPressed = false;
-    int count = 0;
-    while (!done)
-    {
-        int start = SDL_GetTicks();
-        SDL_Event event;
-        SDL_PollEvent(&event);
-
-        switch (event.type)
+void checkControls(SDL_Event event) {
+    switch (event.type)
         {
         case SDL_QUIT:
             done = true;
@@ -481,6 +434,59 @@ int main(int argc, char** argv) {
             player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
             break;
         }
+}
+
+int main(int argc, char** argv) {
+
+    defSkyColor.r = 0;
+    defSkyColor.g = 10;
+    defSkyColor.b = 50;
+
+    skyColor = defSkyColor;
+
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf( "Unable to init SDL: %s\n", SDL_GetError() );
+        return 1;
+    }
+
+    atexit(SDL_Quit);
+
+    char env[80];
+    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", (SDL_GetVideoInfo()->current_w - screenWidth) / 2, 27);
+
+    SDL_putenv(env);
+    SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
+                                           SDL_HWSURFACE | SDL_DOUBLEBUF);
+
+    if (!screen)
+    {
+        printf("Unable to set %dx%dx%d video mode: %s\n", screenWidth, screenHeight, screenBits, SDL_GetError());
+        return 1;
+    }
+
+    SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
+
+    loadTextures();
+    loadLightmaps();
+
+    if(textures.empty() || lightmaps.empty()) {
+        printf("\nCrap fell onto fan\n");
+        system("PAUSE");
+    }
+    char fps[80];
+    int frameTime = 20;
+    fillUpTheStars();
+    SDL_ShowCursor(SDL_DISABLE);
+    int count = 0;
+
+    while (!done)
+    {
+        int start = SDL_GetTicks();
+        SDL_Event event;
+        SDL_PollEvent(&event);
+
+        checkControls(event);
 
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
         doActions(frameTime);
@@ -590,7 +596,7 @@ int main(int argc, char** argv) {
                             }
                         }
                         #ifdef TEXTURE_GRADIENT
-                        SDL_Color pixelRGB = UintToColor(*color);
+                        SDL_Color pixelRGB = UintToColor(*texturePixel);
 
                         shade = ColorToUint(clamp((int)((pixelRGB.r / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.r / 3, clamp((int)(pixelRGB.r * 1.2), 0, 255)),
                                             clamp((int)((pixelRGB.g / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.g / 3, clamp((int)(pixelRGB.g * 1.2), 0, 255)),
