@@ -31,6 +31,9 @@ constexpr const float FOV = pi / (6.4f * ((float)screenHeight / (float)screenWid
 
 const float targetSpeed = 30.0f;
 
+const float blockSize = 64.0f;
+const float blockBitSize = 1.0f / blockSize;
+
 bool isUpHeld = false;
 bool isDownHeld = false;
 bool isLeftHeld = false;
@@ -43,6 +46,7 @@ bool isFloorASky = false;
 
 
 std::vector<SDL_Surface*> textures;
+std::vector<SDL_Surface*> lightmaps;
 
 template <typename T>
 inline T clamp(T value, T min, T max) {
@@ -88,14 +92,22 @@ public:
     Uint8 r;
     Uint8 g;
     Uint8 b;
-    Uint8 texture;
+    Uint16 texture;
+    Uint16 lightmap;
     MapBlock(int red, int green, int blue) :
-        r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0) { }
+        r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0), lightmap(0) { }
 
-    MapBlock(int textureType) : texture((Uint8)textureType) { }
+    MapBlock(int textureType) : texture((Uint16)textureType), lightmap(0) { }
 
-    inline bool getIsTexture() {
+    MapBlock(int textureType, int lightmapType) :
+        texture((Uint16)textureType), lightmap((Uint16)lightmapType) { }
+
+    inline bool getIsTextured() {
         return texture >= 2;
+    }
+
+    inline bool getIsLightMapped() {
+        return lightmap >= 1;
     }
 
     void setDefault() {
@@ -103,6 +115,7 @@ public:
         g = 0;
         b = 0;
         texture = 1;
+        lightmap = 0;
     }
 
     void setEmpty() {
@@ -110,10 +123,15 @@ public:
         g = 0;
         b = 0;
         texture = 0;
+        lightmap = 0;
     }
 
     inline int getTextureIndex() {
         return (int)(texture)-2;
+    }
+
+    inline int getLightMapIndex() {
+        return (int)(lightmap)-1;
     }
 
     SDL_Color getColor(){
@@ -131,8 +149,8 @@ public:
 
 MapBlock map[mapHeight][mapWidth] =
 {
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, MapBlock(2, 1)},
     {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
@@ -273,13 +291,28 @@ void loadTextures() {
     loadTexture(textures, "wall.bmp");
 }
 
+void loadLightmaps() {
+    loadTexture(lightmaps, "checkerBoard.bmp");
+}
+
+SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColor) {
+        color.r = clamp(color.r + lightmapColor.r - 128, 0, 255);
+        color.g = clamp(color.g + lightmapColor.g - 128, 0, 255);
+        color.b = clamp(color.b + lightmapColor.b - 128, 0, 255);
+
+        return color;
+}
+
 void freeTextures() {
     for(auto i = textures.begin(); i != textures.end(); i++) {
         SDL_FreeSurface(*i);
     }
+    for(auto i = lightmaps.begin(); i != lightmaps.end(); i++) {
+        SDL_FreeSurface(*i);
+    }
 }
 
-int main( int argc, char** argv) {
+int main(int argc, char** argv) {
 
     defSkyColor.r = 0;
     defSkyColor.g = 10;
@@ -294,7 +327,11 @@ int main( int argc, char** argv) {
     }
 
     atexit(SDL_Quit);
-    SDL_putenv("SDL_VIDEO_WINDOW_POS=center");
+
+    char env[80];
+    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", (SDL_GetVideoInfo()->current_w - screenWidth) / 2, 27);
+
+    SDL_putenv(env);
     SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
                                            SDL_HWSURFACE | SDL_DOUBLEBUF);
 
@@ -307,8 +344,9 @@ int main( int argc, char** argv) {
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
     loadTextures();
+    loadLightmaps();
 
-    if(textures.empty()) {
+    if(textures.empty() || lightmaps.empty()) {
         printf("\nCrap fell onto fan\n");
         system("PAUSE");
     }
@@ -465,7 +503,7 @@ int main( int argc, char** argv) {
 
             while(!wasWallHit && distanceToAWall < depth)
             {
-                distanceToAWall += 1.0f / 64.0f;
+                distanceToAWall += blockBitSize;
 
                 test.x = player.x + eye.x * distanceToAWall;
                 test.y = player.y + eye.y * distanceToAWall;
@@ -512,26 +550,44 @@ int main( int argc, char** argv) {
                 }
                 else if(i >= ceilingHeight && i < floorHeight)
                 {
-                    //Uint32* pixel = (Uint32*)(screen->pixels + (i * screen->pitch + j * sizeof(Uint32)));
+                    int wallSizeOnScreen = floorHeight - ceilingHeight;
                     Uint32* pixel = getTexturePixel(screen, i, j);
                     Uint32 shade;
                     MapBlock currentBlock = map[(int)test.y][(int)test.x];
-                    if(currentBlock.getIsTexture()) {
-                        int wallSizeOnScreen = floorHeight - ceilingHeight;
+
+                    if(currentBlock.getIsTextured()) {
                         bool isHorisontal = false;
+                        bool isLightMap = currentBlock.getIsLightMapped();
                         float checkY = test.y;
                         SDL_Surface* texture = textures.at(currentBlock.getTextureIndex());
-                        Uint32* color = &defWallColor;
+                        SDL_Surface* lightmap = NULL;
+                        if(isLightMap) {
+                            lightmap = lightmaps.at(currentBlock.getLightMapIndex());
+                        }
+
+                        Uint32* texturePixel = &defWallColor;
+                        Uint32* lightmapPixel;
+
                         if(map[(int)(checkY - 1.0f / 128.0f)][(int)test.x].isEmpty() ||
                            map[(int)(checkY + 1.0f / 128.0f)][(int)test.x].isEmpty()   ) {
                                 isHorisontal = true;
                            }
                         if(isHorisontal) {
-                            color = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
+                            texturePixel = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
                                                              (int)(getFractialPart(test.x) * (float)texture->w));
+
+                            if(isLightMap) {
+                                    lightmapPixel = getTexturePixel(lightmap, (int)(i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen),
+                                                             (int)(getFractialPart(test.x) * (float)lightmap->w));
+                            }
                         } else {
-                            color = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
+                            texturePixel = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
                                                              (int)(getFractialPart(test.y) * (float)texture->w));
+
+                            if(isLightMap) {
+                                    lightmapPixel = getTexturePixel(lightmap, (int)(i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen),
+                                                             (int)(getFractialPart(test.y) * (float)lightmap->w));
+                            }
                         }
                         #ifdef TEXTURE_GRADIENT
                         SDL_Color pixelRGB = UintToColor(*color);
@@ -540,14 +596,21 @@ int main( int argc, char** argv) {
                                             clamp((int)((pixelRGB.g / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.g / 3, clamp((int)(pixelRGB.g * 1.2), 0, 255)),
                                             clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.2), 0, 255)));
                         #else
-                        shade = *color;
+                        if(isLightMap) {
+                        SDL_Color texColor = UintToColor(*texturePixel);
+                        SDL_Color lightColor = UintToColor(*lightmapPixel);
+                        SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
+                        shade = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
+                        } else {
+                            shade = *texturePixel;
+                        }
                         #endif
                     } else {
                     shade = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
                                         clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
                                         clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
                     }
-                    *pixel = (Uint32)shade;
+                    *pixel = shade;
                 }
                 else
                 {
