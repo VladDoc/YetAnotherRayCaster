@@ -197,14 +197,13 @@
 	"begin_code.h"
 	"close_code.h"
 
-1563087365 source:d:\progs\cpp\raycaster\main.cpp
+1563360975 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
 	<cmath>
 	<cstdio>
 	<vector>
-	<thread>
 	<SDL/SDL.h>
 	<omp.h>
 

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include <SDL/SDL.h>
-#include <omp.h>
 
 
 //#define TEXTURE_GRADIENT 1
@@ -44,10 +43,9 @@ bool isRStrafeHeld = false;
 
 bool shouldStarsBeRendered = true;
 bool isFloorASky = false;
+bool isFullScreen = false;
 
-static bool done = false;
-static bool wasSkyColorChangePressed = false;
-static bool wasSkyIsAFloorPressed = false;
+bool done = false;
 
 
 std::vector<SDL_Surface*> textures;
@@ -86,6 +84,10 @@ SDL_Color UintToColor(Uint32 color)
 float getFractialPart(float arg) {
     int wholePart = (int)arg;
     return arg - wholePart;
+}
+
+int getBiggerNearestInt(float arg) {
+    return (int)arg + 1;
 }
 
 SDL_Color defSkyColor;
@@ -155,8 +157,8 @@ public:
 MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, MapBlock(2, 1)},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, MapBlock(2, 1)},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
@@ -317,7 +319,11 @@ void freeTextures() {
     }
 }
 
-void checkControls(SDL_Event event) {
+void checkControls(SDL_Event event, SDL_Surface* screen) {
+    static bool wasSkyColorChangePressed = false;
+    static bool wasSkyIsAFloorPressed = false;
+    static bool wasFullScreenTogglePressed = false;
+
     switch (event.type)
         {
         case SDL_QUIT:
@@ -389,7 +395,19 @@ void checkControls(SDL_Event event) {
                     isFloorASky ? isFloorASky = false : isFloorASky = true;
                     wasSkyIsAFloorPressed = true;
                  }
-             }
+            }
+            if(event.key.keysym.sym == SDLK_F4) {
+                if(!wasFullScreenTogglePressed) {
+                    if(!isFullScreen) {
+                        screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
+                        isFullScreen = true;
+                    } else {
+                        screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
+                        isFullScreen = false;
+                    }
+                wasFullScreenTogglePressed = true;
+                }
+            }
             break;
         }
         case SDL_KEYUP:
@@ -429,6 +447,9 @@ void checkControls(SDL_Event event) {
             if(event.key.keysym.sym == SDLK_PAGEDOWN) {
                 wasSkyIsAFloorPressed = false;
             }
+            if(event.key.keysym.sym == SDLK_F4) {
+                wasFullScreenTogglePressed = false;
+            }
             break;
         }
         case SDL_MOUSEMOTION:
@@ -438,7 +459,7 @@ void checkControls(SDL_Event event) {
 }
 
 
-int renderColumn(int j, SDL_Surface* screen) {
+void renderColumn(int j, SDL_Surface* screen) {
 
         float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
 
@@ -457,6 +478,7 @@ int renderColumn(int j, SDL_Surface* screen) {
         while(!wasWallHit && distanceToAWall < depth) // Ray traversal
         {
             distanceToAWall += blockBitSize;
+
 
             test.x = player.x + eye.x * distanceToAWall;
             test.y = player.y + eye.y * distanceToAWall;
@@ -586,7 +608,6 @@ int renderColumn(int j, SDL_Surface* screen) {
                 *pixel = (Uint32)shade;
             }
         }
-    return 0;
 }
 
 int main(int argc, char** argv)
@@ -626,8 +647,9 @@ int main(int argc, char** argv)
 
     if(textures.empty() || lightmaps.empty())
     {
-        printf("\nCrap fell onto fan\n");
+        printf("\nCould not load textures.\n");
         system("PAUSE");
+        exit(-1);
     }
 
     char fps[80];
@@ -642,7 +664,7 @@ int main(int argc, char** argv)
         SDL_Event event;
         SDL_PollEvent(&event);
 
-        checkControls(event);
+        checkControls(event, screen);
 
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
         doActions(frameTime);
