@@ -63,10 +63,9 @@ inline T clamp(T value, T min, T max) {
     return value;
 }
 
-template <typename T>
-inline T clampLooping(T value, T min, T max) {
+inline float clampLooping(float value, float min, float max) {
     if(value > max) {
-        return min + (fmod(value, max) - max);
+        return min + (max - fmod(value, max));
     }
     if(value < min) {
         return max - (min - fmod(value, max));
@@ -521,12 +520,14 @@ void renderColumn(int j, SDL_Surface* screen) {
         int ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);// + abs(j  - screenWidth / 2);
         int floorHeight = screenHeight - ceilingHeight;
 
+        float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+
         for(int i = 0; i < screenHeight; ++i)
         {
             if(i < ceilingHeight)
             {
                 Uint32 shade;
-                if(stars[i][(int)(screenWidth * (clampLooping(ray, 0.0f, pi * 2) / FOV))] && shouldStarsBeRendered) {
+                if(stars[i][(int)(screenWidth * (bufferRay / FOV))] && shouldStarsBeRendered) {
                     shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255));
@@ -610,7 +611,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                                         clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
                                         clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
                 } else {
-                    if(stars[i][(int)(screenWidth * (clampLooping(ray, 0.0f, pi * 2) / FOV))] && shouldStarsBeRendered) {
+                    if(stars[i][(int)(screenWidth * (bufferRay / FOV))] && shouldStarsBeRendered) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
