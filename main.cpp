@@ -29,7 +29,7 @@ const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the 
 
 constexpr const float FOV = pi / (6.4f * ((float)screenHeight / (float)screenWidth));
 
-const float targetSpeed = 30.0f;
+const float targetSpeed = 40.0f;
 
 const float blockSize = 64.0f;
 const float blockBitSize = 1.0f / blockSize;
@@ -63,6 +63,18 @@ inline T clamp(T value, T min, T max) {
     return value;
 }
 
+template <typename T>
+inline T clampLooping(T value, T min, T max) {
+    if(value > max) {
+        return min + (fmod(value, max) - max);
+    }
+    if(value < min) {
+        return max - (min - fmod(value, max));
+    }
+
+    return value;
+}
+
 Uint32 ColorToUint(int R, int G, int B)
 {
 	return (Uint32)((R << 16) + (G << 8) + (B << 0));
@@ -85,6 +97,8 @@ float getFractialPart(float arg) {
     int wholePart = (int)arg;
     return arg - wholePart;
 }
+
+
 
 int getBiggerNearestInt(float arg) {
     return (int)arg + 1;
@@ -157,9 +171,9 @@ public:
 MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
@@ -174,7 +188,9 @@ MapBlock map[mapHeight][mapWidth] =
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
 
-bool stars[screenHeight][screenWidth];
+const int starsWidth = screenWidth * (int)((pi * 2) / FOV);
+const int starsHeight = screenHeight;
+bool stars[starsHeight][starsWidth];
 
 Uint32 defWallColor = ColorToUint(45, 20, 0);
 
@@ -268,8 +284,8 @@ void fillUpTheMapToBeBox(MapBlock** aMap)
 
 void fillUpTheStars() {
     srand(1);
-    for(int i = 0; i < screenHeight; ++i) {
-        for(int j = 0; j < screenWidth; ++j) {
+    for(int i = 0; i < starsHeight; ++i) {
+        for(int j = 0; j < starsWidth; ++j) {
             if(!(rand() % 256)) {
                 stars[i][j] = true;
             }
@@ -510,7 +526,7 @@ void renderColumn(int j, SDL_Surface* screen) {
             if(i < ceilingHeight)
             {
                 Uint32 shade;
-                if(stars[i][j] && shouldStarsBeRendered) {
+                if(stars[i][(int)(screenWidth * (clampLooping(ray, 0.0f, pi * 2) / FOV))] && shouldStarsBeRendered) {
                     shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255));
@@ -594,7 +610,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                                         clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
                                         clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
                 } else {
-                    if(stars[i][j] && shouldStarsBeRendered) {
+                    if(stars[i][(int)(screenWidth * (clampLooping(ray, 0.0f, pi * 2) / FOV))] && shouldStarsBeRendered) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
