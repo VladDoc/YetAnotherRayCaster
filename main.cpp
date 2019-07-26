@@ -527,7 +527,7 @@ void renderColumn(int j, SDL_Surface* screen) {
             if(i < ceilingHeight)
             {
                 Uint32 shade;
-                if(stars[i][(int)(screenWidth * (bufferRay / FOV))] && shouldStarsBeRendered) {
+                if(shouldStarsBeRendered && stars[i][(int)(screenWidth * (bufferRay / FOV))]) {
                     shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255));
@@ -588,10 +588,11 @@ void renderColumn(int j, SDL_Surface* screen) {
                                         clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.2), 0, 255)));
                     #else
                     if(isLightMap) {
-                    SDL_Color texColor = UintToColor(*texturePixel);
-                    SDL_Color lightColor = UintToColor(*lightmapPixel);
-                    SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
-                    shade = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
+                        SDL_Color texColor = UintToColor(*texturePixel);
+                        SDL_Color lightColor = UintToColor(*lightmapPixel);
+                        SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
+
+                        shade = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                     } else {
                         shade = *texturePixel;
                     }
@@ -611,7 +612,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                                         clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
                                         clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
                 } else {
-                    if(stars[i][(int)(screenWidth * (bufferRay / FOV))] && shouldStarsBeRendered) {
+                    if(shouldStarsBeRendered && stars[i][(int)(screenWidth * (bufferRay / FOV))]) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
@@ -703,6 +704,7 @@ int main(int argc, char** argv)
         SDL_Flip(screen);
         ++count;
     }
+
     freeTextures();
     SDL_free(screen);
     return 0;
