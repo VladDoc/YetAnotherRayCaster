@@ -11,8 +11,8 @@
 
 //#define TEXTURE_GRADIENT 1
 
-const int screenWidth = 800;
-const int screenHeight = 600;
+const int screenWidth = 640;
+const int screenHeight = 480;
 const int screenBits = 32;
 
 const int mapHeight = 16;
@@ -33,6 +33,7 @@ const float targetSpeed = 40.0f;
 
 const float blockSize = 64.0f;
 const float blockBitSize = 1.0f / blockSize;
+const int targetFPS = 60;
 
 bool isUpHeld = false;
 bool isDownHeld = false;
@@ -304,7 +305,7 @@ void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
     txt.push_back(texture);
 }
 
-Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
+inline Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
     return (Uint32*)(surf->pixels + i * surf->pitch + j * sizeof(Uint32));
 }
 
@@ -383,9 +384,9 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
             {
                 if(!wasSkyColorChangePressed)
                 {
-                    skyColor.r = rand() % 25;
-                    skyColor.g = rand() % 25;
-                    skyColor.b = rand() % 25;
+                    skyColor.r = rand() % 40;
+                    skyColor.g = rand() % 40;
+                    skyColor.b = rand() % 40;
                     wasSkyColorChangePressed = true;
                 }
             }
@@ -521,13 +522,14 @@ void renderColumn(int j, SDL_Surface* screen) {
         int floorHeight = screenHeight - ceilingHeight;
 
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+        int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
 
         for(int i = 0; i < screenHeight; ++i)
         {
             if(i < ceilingHeight)
             {
                 Uint32 shade;
-                if(shouldStarsBeRendered && stars[i][(int)(screenWidth * (bufferRay / FOV))]) {
+                if(shouldStarsBeRendered && stars[i][skyWidthIndex]) {
                     shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255));
@@ -612,7 +614,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                                         clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
                                         clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
                 } else {
-                    if(shouldStarsBeRendered && stars[i][(int)(screenWidth * (bufferRay / FOV))]) {
+                    if(shouldStarsBeRendered && stars[i][skyWidthIndex]) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
@@ -693,6 +695,14 @@ int main(int argc, char** argv)
         }
 
         int end = SDL_GetTicks();
+        frameTime = end - start;
+
+        if(frameTime < (1000 / targetFPS))
+        {
+            SDL_Delay((1000 / targetFPS) - frameTime);
+        }
+
+        end = SDL_GetTicks();
         frameTime = end - start;
 
         if(count == 16)
