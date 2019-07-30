@@ -48,6 +48,8 @@ bool isFullScreen = false;
 
 bool done = false;
 
+int horizonLine = 0; // 0 is default it means that horizon won't be changed
+
 
 std::vector<SDL_Surface*> textures;
 std::vector<SDL_Surface*> lightmaps;
@@ -171,7 +173,7 @@ public:
 MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {2,1}},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
@@ -189,7 +191,7 @@ MapBlock map[mapHeight][mapWidth] =
 };
 
 const int starsWidth = screenWidth * (int)((pi * 2) / FOV);
-const int starsHeight = screenHeight;
+const int starsHeight = screenHeight * 4;
 bool stars[starsHeight][starsWidth];
 
 Uint32 defWallColor = ColorToUint(45, 20, 0);
@@ -278,7 +280,7 @@ void fillUpTheMapToBeBox(MapBlock** aMap)
 
     for(int i = 0; i < mapWidth; ++i)
     {
-        map[mapHeight-1][i].setDefault();
+        aMap[mapHeight-1][i].setDefault();
     }
 }
 
@@ -286,7 +288,7 @@ void fillUpTheStars() {
     srand(1);
     for(int i = 0; i < starsHeight; ++i) {
         for(int j = 0; j < starsWidth; ++j) {
-            if(!(rand() % 256)) {
+            if(!(rand() % screenWidth / 2)) {
                 stars[i][j] = true;
             }
         }
@@ -310,18 +312,18 @@ inline Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
 }
 
 void loadTextures() {
-    loadTexture(textures, "Desert.bmp");
+    loadTexture(textures, "wall2.bmp");
     loadTexture(textures, "wall.bmp");
 }
 
 void loadLightmaps() {
-    loadTexture(lightmaps, "checkerBoard.bmp");
+    loadTexture(lightmaps, "wall2bumpmap.bmp");
 }
 
 SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColor) {
-        color.r = clamp(color.r + lightmapColor.r - 128, 0, 255);
-        color.g = clamp(color.g + lightmapColor.g - 128, 0, 255);
-        color.b = clamp(color.b + lightmapColor.b - 128, 0, 255);
+        color.r = clamp(color.r + lightmapColor.r - 192, 0, 255);
+        color.g = clamp(color.g + lightmapColor.g - 192, 0, 255);
+        color.b = clamp(color.b + lightmapColor.b - 192, 0, 255);
 
         return color;
 }
@@ -424,6 +426,9 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
                 wasFullScreenTogglePressed = true;
                 }
             }
+            if(event.key.keysym.sym == SDLK_c) {
+                horizonLine = 0;
+            }
             break;
         }
         case SDL_KEYUP:
@@ -470,6 +475,8 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
         }
         case SDL_MOUSEMOTION:
             player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
+            horizonLine += (screenHeight / 2 - event.motion.y);
+            horizonLine = clamp(horizonLine, (-screenHeight * 2) / 3, (screenHeight * 2) / 3);
             break;
         }
 }
@@ -520,6 +527,8 @@ void renderColumn(int j, SDL_Surface* screen) {
 
         int ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);// + abs(j  - screenWidth / 2);
         int floorHeight = screenHeight - ceilingHeight;
+        ceilingHeight += horizonLine;
+        floorHeight += horizonLine;
 
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
         int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
@@ -529,7 +538,7 @@ void renderColumn(int j, SDL_Surface* screen) {
             if(i < ceilingHeight)
             {
                 Uint32 shade;
-                if(shouldStarsBeRendered && stars[i][skyWidthIndex]) {
+                if(shouldStarsBeRendered && stars[i + (starsHeight / 2 + horizonLine)][skyWidthIndex]) {
                     shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255));
@@ -614,7 +623,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                                         clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
                                         clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
                 } else {
-                    if(shouldStarsBeRendered && stars[i][skyWidthIndex]) {
+                    if(shouldStarsBeRendered && stars[i + (starsHeight / 2 + horizonLine)][skyWidthIndex]) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
@@ -648,7 +657,7 @@ int main(int argc, char** argv)
     atexit(SDL_Quit);
 
     char env[80];
-    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", (SDL_GetVideoInfo()->current_w - screenWidth) / 2, 27);
+    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", (SDL_GetVideoInfo()->current_w - screenWidth) / 2, 30);
 
     SDL_putenv(env);
     SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
