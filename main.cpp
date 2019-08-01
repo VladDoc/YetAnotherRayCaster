@@ -49,6 +49,7 @@ bool isFullScreen = false;
 bool done = false;
 
 int horizonLine = 0; // 0 is default it means that horizon won't be changed
+const int horizonCap = (screenHeight * 2) / 3;
 
 
 std::vector<SDL_Surface*> textures;
@@ -173,8 +174,8 @@ public:
 MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {2,1}},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3},
     {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
@@ -191,7 +192,7 @@ MapBlock map[mapHeight][mapWidth] =
 };
 
 const int starsWidth = screenWidth * (int)((pi * 2) / FOV);
-const int starsHeight = screenHeight * 4;
+const int starsHeight = screenHeight + horizonCap * 2;
 bool stars[starsHeight][starsWidth];
 
 Uint32 defWallColor = ColorToUint(45, 20, 0);
@@ -476,7 +477,7 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
         case SDL_MOUSEMOTION:
             player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
             horizonLine += (screenHeight / 2 - event.motion.y);
-            horizonLine = clamp(horizonLine, (-screenHeight * 2) / 3, (screenHeight * 2) / 3);
+            horizonLine = clamp(horizonLine, -horizonCap, horizonCap);
             break;
         }
 }
@@ -538,14 +539,14 @@ void renderColumn(int j, SDL_Surface* screen) {
             if(i < ceilingHeight)
             {
                 Uint32 shade;
-                if(shouldStarsBeRendered && stars[i + (starsHeight / 2 + horizonLine)][skyWidthIndex]) {
+                if(shouldStarsBeRendered && stars[i + (horizonCap - horizonLine)][skyWidthIndex]) {
                     shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255),
                                         clamp(rand() % 256, 165, 255));
                 } else {
-                    shade = ColorToUint(clamp((int)(skyColor.r * (float)(i + 64) / 128), 0, 255),
-                                        clamp((int)(skyColor.g * (float)(i + 64) / 128), 0, 255),
-                                        clamp((int)(skyColor.b * (float)(i + 64) / 128), 0, 255));
+                    shade = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 64) / 128), 0, 255),
+                                        clamp((int)(skyColor.g * (float)(i - horizonLine + 64) / 128), 0, 255),
+                                        clamp((int)(skyColor.b * (float)(i - horizonLine + 64) / 128), 0, 255));
                 }
                 Uint32* pixel = getTexturePixel(screen, i, j);
                 *pixel = shade;
@@ -619,18 +620,18 @@ void renderColumn(int j, SDL_Surface* screen) {
             {
                 Uint32 shade;
                 if(!isFloorASky) {
-                    shade = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + 128) / 128), 0, 200),
-                                        clamp((int)(50 * (float)(screenHeight - i + 128) / 128), 0, 200),
-                                        clamp((int)(20 * (float)(screenHeight - i + 128) / 128), 0, 200));
+                    shade = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200),
+                                        clamp((int)(50 * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200),
+                                        clamp((int)(20 * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200));
                 } else {
-                    if(shouldStarsBeRendered && stars[i + (starsHeight / 2 + horizonLine)][skyWidthIndex]) {
+                    if(shouldStarsBeRendered && stars[i + (horizonCap - horizonLine)][skyWidthIndex]) {
                         shade = ColorToUint(clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255),
                                             clamp(rand() % 256, 165, 255));
                     } else {
-                        shade = ColorToUint(clamp((int)(skyColor.r * (float)(i + 64) / 128), 0, 255),
-                                            clamp((int)(skyColor.g * (float)(i + 64) / 128), 0, 255),
-                                            clamp((int)(skyColor.b * (float)(i + 64) / 128), 0, 255));
+                        shade = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine / 2 + 64) / 128), 0, 255),
+                                            clamp((int)(skyColor.g * (float)(i - horizonLine / 2 + 64) / 128), 0, 255),
+                                            clamp((int)(skyColor.b * (float)(i - horizonLine / 2 + 64) / 128), 0, 255));
                     }
                 }
                 Uint32* pixel = getTexturePixel(screen, i, j);
