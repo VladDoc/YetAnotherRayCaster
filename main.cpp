@@ -480,13 +480,13 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
             horizonLine = clamp(horizonLine, -horizonCap, horizonCap);
             break;
         }
+        SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
 }
 
 
 void renderColumn(int j, SDL_Surface* screen) {
 
         float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
-
         float distanceToAWall = 0.0f;
 
         Vector2D<float> eye;
@@ -692,11 +692,10 @@ int main(int argc, char** argv)
     {
         int start = SDL_GetTicks();
         SDL_Event event;
-        SDL_PollEvent(&event);
+        while(SDL_PollEvent(&event)) {
+            checkControls(event, screen);
+        }
 
-        checkControls(event, screen);
-
-        SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
         doActions(frameTime);
 
         for(int j = 0; j < screenWidth; ++j)
