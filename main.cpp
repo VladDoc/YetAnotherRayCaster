@@ -69,10 +69,10 @@ inline T clamp(T value, T min, T max) {
 
 inline float clampLooping(float value, float min, float max) {
     if(value > max) {
-        return min + (max - fmod(value, max));
+        return min + fmod(value, max);
     }
     if(value < min) {
-        return max - (min - fmod(value, max));
+        return max - fmod(value, max);
     }
 
     return value;
@@ -96,14 +96,14 @@ SDL_Color UintToColor(Uint32 color)
 	return retColor;
 }
 
-float getFractialPart(float arg) {
+float getFractialPart(float arg)
+{
     int wholePart = (int)arg;
     return arg - wholePart;
 }
 
-
-
-int getBiggerNearestInt(float arg) {
+int getBiggerNearestInt(float arg)
+{
     return (int)arg + 1;
 }
 
@@ -118,6 +118,7 @@ public:
     Uint8 b;
     Uint16 texture;
     Uint16 lightmap;
+
     MapBlock(int red, int green, int blue) :
         r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0), lightmap(0) { }
 
@@ -174,8 +175,8 @@ public:
 MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
     {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
@@ -286,7 +287,7 @@ void fillUpTheMapToBeBox(MapBlock** aMap)
 }
 
 void fillUpTheStars() {
-    srand(1);
+    srand(256);
     for(int i = 0; i < starsHeight; ++i) {
         for(int j = 0; j < starsWidth; ++j) {
             if(!(rand() % screenWidth / 2)) {
