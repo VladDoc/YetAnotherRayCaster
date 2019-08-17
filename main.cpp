@@ -177,9 +177,9 @@ MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {1, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+    {0, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
+    {3, 0, 3, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
     {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -579,24 +579,24 @@ void renderColumn(int j, SDL_Surface* screen) {
                         Uint32* texturePixel = &defWallColor;
                         Uint32* lightmapPixel;
 
-                        if(map[(int)(checkY - 1.0f / 128.0f)][(int)test.x].isEmpty() ||
-                           map[(int)(checkY + 1.0f / 128.0f)][(int)test.x].isEmpty()   ) {
+                        if(map[(int)(checkY - blockBitSize)][(int)test.x].isEmpty() ||
+                           map[(int)(checkY + blockBitSize)][(int)test.x].isEmpty()   ) {
                             isHorisontal = true;
                         }
                     if(isHorisontal) {
-                            texturePixel = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
+                            texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(test.x) * (float)texture->w));
 
                         if(isLightMap) {
-                            lightmapPixel = getTexturePixel(lightmap, (int)(i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen),
+                            lightmapPixel = getTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(test.x) * (float)lightmap->w));
                         }
                     } else {
-                            texturePixel = getTexturePixel(texture, (int)(i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen),
+                            texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(test.y) * (float)texture->w));
 
                         if(isLightMap) {
-                            lightmapPixel = getTexturePixel(lightmap, (int)(i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen),
+                            lightmapPixel = getTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(test.y) * (float)lightmap->w));
                         }
                     }
