@@ -1,6 +1,8 @@
 #ifndef GAMEDATA_H_INCLUDED
 #define GAMEDATA_H_INCLUDED
 
+#include <vector>
+
 #include "GameConstants.h"
 #include "MapBlock.h"
 

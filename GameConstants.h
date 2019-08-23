@@ -1,6 +1,8 @@
 #ifndef GAMECONSTANTS_H_INCLUDED
 #define GAMECONSTANTS_H_INCLUDED
 
+#include <limits>
+
 #include "Utility.h"
 
 //#define TEXTURE_GRADIENT 1

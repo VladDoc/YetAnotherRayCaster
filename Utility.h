@@ -1,6 +1,8 @@
 #ifndef UTILITY_H_INCLUDED
 #define UTILITY_H_INCLUDED
 
+#include <vector>
+
 template <typename T>
 inline T clamp(T value, T min, T max) {
     if(value > max) {

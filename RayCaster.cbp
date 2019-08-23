@@ -45,9 +45,12 @@
 		<Unit filename="ControlsState.h" />
 		<Unit filename="GameConstants.h" />
 		<Unit filename="GameData.h" />
+		<Unit filename="Input.h" />
 		<Unit filename="MapBlock.h" />
 		<Unit filename="Utility.h" />
+		<Unit filename="Vector2D.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="player.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
