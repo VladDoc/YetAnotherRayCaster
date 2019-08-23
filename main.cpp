@@ -9,195 +9,11 @@
 
 #include <SDL/SDL.h>
 
+#include "MapBlock.h"
+#include "ControlsState.h"
+#include "Utility.h"
+#include "GameData.h"
 
-//#define TEXTURE_GRADIENT 1
-
-const int screenWidth = 800;
-const int screenHeight = 480;
-const int screenBits = 32;
-
-const int mapHeight = 16;
-const int mapWidth = 16;
-
-const float pi = 3.14159f;
-constexpr const float depth =  std::numeric_limits<float>::max();
-
-const float defWalkingSpeed = 0.2f;
-float walkingSpeed = 0.2f;
-const float rotatingSpeed = 0.1f;
-
-const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
-
-constexpr const float FOV = pi / (6.4f * ((float)screenHeight / (float)screenWidth));
-
-const float targetSpeed = 40.0f;
-
-const float blockSize = 64.0f;
-const float blockBitSize = 1.0f / blockSize;
-const int targetFPS = 60;
-
-bool isUpHeld = false;
-bool isDownHeld = false;
-bool isLeftHeld = false;
-bool isRightHeld = false;
-bool isLStrafeHeld = false;
-bool isRStrafeHeld = false;
-
-bool shouldStarsBeRendered = true;
-bool isFloorASky = false;
-bool isFullScreen = false;
-
-bool done = false;
-
-int horizonLine = 0; // 0 is default it means that horizon won't be changed
-const int horizonCap = (screenHeight * 2) / 3;
-
-
-std::vector<SDL_Surface*> textures;
-std::vector<SDL_Surface*> lightmaps;
-
-template <typename T>
-inline T clamp(T value, T min, T max) {
-    if(value > max) {
-            return max;
-    }
-    if(value < min) {
-            return min;
-    }
-
-    return value;
-}
-
-inline float clampLooping(float value, float min, float max) {
-    if(value > max) {
-        return min + fmod(value, max);
-    }
-    if(value < min) {
-        return max - fmod(value, max);
-    }
-
-    return value;
-}
-
-Uint32 ColorToUint(int R, int G, int B)
-{
-	return (Uint32)((R << 16) + (G << 8) + (B << 0));
-}
-
-SDL_Color UintToColor(Uint32 color)
-{
-	SDL_Color retColor;
-
-	retColor.unused = 255; // Alpha
-
-	retColor.r = (color >> 16) & 0xFF; // Takes second byte
-	retColor.g = (color >> 8) & 0xFF; // Takes third byte
-	retColor.b = color & 0xFF; // Takes last one
-
-	return retColor;
-}
-
-float getFractialPart(float arg)
-{
-    int wholePart = (int)arg;
-    return arg - wholePart;
-}
-
-int getBiggerNearestInt(float arg)
-{
-    return (int)arg + 1;
-}
-
-SDL_Color defSkyColor;
-SDL_Color skyColor;
-
-class MapBlock
-{
-public:
-    Uint8 r;
-    Uint8 g;
-    Uint8 b;
-    Uint16 texture;
-    Uint16 lightmap;
-
-    MapBlock(int red, int green, int blue) :
-        r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0), lightmap(0) { }
-
-    MapBlock(int textureType) : texture((Uint16)textureType), lightmap(0) { }
-
-    MapBlock(int textureType, int lightmapType) :
-        texture((Uint16)textureType), lightmap((Uint16)lightmapType) { }
-
-    inline bool getIsTextured() {
-        return texture >= 2;
-    }
-
-    inline bool getIsLightMapped() {
-        return lightmap >= 1;
-    }
-
-    void setDefault() {
-        r = 0;
-        g = 0;
-        b = 0;
-        texture = 1;
-        lightmap = 0;
-    }
-
-    void setEmpty() {
-        r = 0;
-        g = 0;
-        b = 0;
-        texture = 0;
-        lightmap = 0;
-    }
-
-    inline int getTextureIndex() {
-        return (int)(texture)-2;
-    }
-
-    inline int getLightMapIndex() {
-        return (int)(lightmap)-1;
-    }
-
-    SDL_Color getColor(){
-        SDL_Color retColor;
-        retColor.r = r;
-        retColor.g = g;
-        retColor.b = b;
-        return retColor;
-    }
-
-    inline bool isEmpty() {
-        return !(r || g || b || texture);
-    }
-};
-
-MapBlock map[mapHeight][mapWidth] =
-{
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
-    {0, 0, 0, 0, 0, 0, 0, 0, MapBlock(0, 0, 50), MapBlock(0, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), MapBlock(20, 0, 50), 0, 1},
-    {3, 0, 3, 0, 0, 0, 0, 0, MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), MapBlock(50, 0, 0), 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-};
-
-const int starsWidth = screenWidth * (int)((pi * 2) / FOV);
-const int starsHeight = screenHeight + horizonCap * 2 + 1;
-bool stars[starsHeight][starsWidth];
-
-Uint32 defWallColor = ColorToUint(45, 20, 0);
 
 struct Player
 {
@@ -265,71 +81,6 @@ void doActions(int frameTime) {
     }
 }
 
-void fillUpTheMapToBeBox(MapBlock** aMap)
-{
-    for(int i = 0; i < mapWidth; ++i)
-    {
-        aMap[0][i].setDefault();
-    }
-
-    for(int i = 1; i < mapHeight-1; ++i)
-    {
-        for(int j = 0; j < mapWidth; ++j)
-        {
-            if(j == 0 || j == mapWidth-1) aMap[i][j].setDefault();
-            else aMap[i][j].setEmpty();
-        }
-    }
-
-    for(int i = 0; i < mapWidth; ++i)
-    {
-        aMap[mapHeight-1][i].setDefault();
-    }
-}
-
-void fillUpTheStars() {
-    srand(256);
-    for(int i = 0; i < starsHeight; ++i) {
-        for(int j = 0; j < starsWidth; ++j) {
-            if(!(rand() % screenWidth / 2)) {
-                stars[i][j] = true;
-            }
-        }
-    }
-}
-
-void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
-{
-    SDL_Surface* surf = SDL_LoadBMP(filename);
-    SDL_Surface* texture = SDL_DisplayFormat(surf);
-    if(!surf || !texture) {
-        printf("Unable to load textures. Exiting.....");
-        system("PAUSE");
-        exit(-1);
-    }
-    txt.push_back(texture);
-}
-
-inline Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
-    return (Uint32*)(surf->pixels + i * surf->pitch + j * sizeof(Uint32));
-}
-
-void loadTextures() {
-    loadTexture(textures, "wall2.bmp");
-    loadTexture(textures, "wall.bmp");
-}
-
-void loadLightmaps() {
-    loadTexture(lightmaps, "wall2bumpmap.bmp");
-}
-
-SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColor) {
-        color.r = clamp(color.r + lightmapColor.r - 192, 0, 255);
-        color.g = clamp(color.g + lightmapColor.g - 192, 0, 255);
-        color.b = clamp(color.b + lightmapColor.b - 192, 0, 255);
-
-        return color;
-}
 
 void freeTextures() {
     for(auto i = textures.begin(); i != textures.end(); i++) {
@@ -549,12 +300,12 @@ void renderColumn(int j, SDL_Surface* screen) {
                 Uint32 pixelColor;
                 if(shouldStarsBeRendered && stars[i + (horizonCap - horizonLine)][skyWidthIndex]) {
                     pixelColor = ColorToUint(clamp(rand() % 256, 165, 255),
-                                        clamp(rand() % 256, 165, 255),
-                                        clamp(rand() % 256, 165, 255));
+                                             clamp(rand() % 256, 165, 255),
+                                             clamp(rand() % 256, 165, 255));
                 } else {
                     pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 128) / 128), 0, 255),
-                                        clamp((int)(skyColor.g * (float)(i - horizonLine + 128) / 128), 0, 255),
-                                        clamp((int)(skyColor.b * (float)(i - horizonLine + 128) / 128), 0, 255));
+                                             clamp((int)(skyColor.g * (float)(i - horizonLine + 128) / 128), 0, 255),
+                                             clamp((int)(skyColor.b * (float)(i - horizonLine + 128) / 128), 0, 255));
                 }
                 Uint32* pixel = getTexturePixel(screen, i, j);
                 *pixel = pixelColor;
