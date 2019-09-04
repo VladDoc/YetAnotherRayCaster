@@ -1,18 +1,17 @@
+#pragma once
+
 #ifndef INPUT_H_INCLUDED
 #define INPUT_H_INCLUDED
 
-#ifndef CONTROLSSTATE_H_INCLUDED
 #include "ControlsState.h"
-#endif // CONTROLSSTATE_H_INCLUDED
-
-#ifndef PLAYER_H_INCLUDED
 #include "player.h"
-#endif // PLAYER_H_INCLUDED
 
-void checkControls(SDL_Event event, SDL_Surface* screen) {
+void checkControls(SDL_Event event, SDL_Surface** screen) {
     static bool wasSkyColorChangePressed = false;
     static bool wasSkyIsAFloorPressed = false;
     static bool wasFullScreenTogglePressed = false;
+
+    Uint8 *keyState = SDL_GetKeyState(NULL);
 
     switch (event.type) {
         case SDL_QUIT:
@@ -88,10 +87,10 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
             if(event.key.keysym.sym == SDLK_F4) {
                 if(!wasFullScreenTogglePressed) {
                     if(!isFullScreen) {
-                        screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
+                        *screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
                         isFullScreen = true;
                     } else {
-                        screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
+                        *screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
                         isFullScreen = false;
                     }
                 wasFullScreenTogglePressed = true;
@@ -99,6 +98,12 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
             }
             if(event.key.keysym.sym == SDLK_c) {
                 horizonLine = 0;
+            }
+            if(keyState[SDLK_LALT] && keyState[SDLK_LCTRL] && keyState[SDLK_o]) {
+                easterEgg = easterEgg ? false : true;
+            }
+            if(event.key.keysym.sym == SDLK_F12) {
+                textureGradient = textureGradient ? false : true;
             }
             break;
         }
@@ -146,7 +151,7 @@ void checkControls(SDL_Event event, SDL_Surface* screen) {
         }
         case SDL_MOUSEMOTION:
             player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
-            horizonLine += (screenHeight / 2 - event.motion.y);
+            horizonLine += (screenHeight / 2 - event.motion.y) * ((float)screenHeight / 400);
             horizonLine = clamp(horizonLine, -horizonCap, horizonCap);
             break;
         }

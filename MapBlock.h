@@ -1,22 +1,33 @@
+#pragma once
+
 #ifndef MAPBLOCK_H_INCLUDED
 #define MAPBLOCK_H_INCLUDED
 
 class MapBlock
 {
 public:
-    Uint8 r;
-    Uint8 g;
-    Uint8 b;
-    Uint16 texture;
-    Uint16 lightmap;
+    Uint8 r{};
+    Uint8 g{};
+    Uint8 b{};
+    Uint16 texture{};
+    Uint16 lightmap{};
+    float height = 1.0f;
 
     MapBlock(int red, int green, int blue) :
         r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0), lightmap(0) { }
 
+    MapBlock(int red, int green, int blue, float h) :
+        r((Uint8)red), g((Uint8)green), b((Uint8)blue), height(h) { }
+
     MapBlock(int textureType) : texture((Uint16)textureType), lightmap(0) { }
+
+    MapBlock(int textureType, float h) : texture((Uint16)textureType), height(h) { }
 
     MapBlock(int textureType, int lightmapType) :
         texture((Uint16)textureType), lightmap((Uint16)lightmapType) { }
+
+    MapBlock(int textureType, int lightmapType, float h) :
+        texture((Uint16)textureType), lightmap((Uint16)lightmapType), height(h) { }
 
     inline bool getIsTextured() {
         return texture >= 2;

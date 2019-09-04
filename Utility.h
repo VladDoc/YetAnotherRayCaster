@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef UTILITY_H_INCLUDED
 #define UTILITY_H_INCLUDED
 
@@ -50,11 +52,6 @@ float getFractialPart(float arg)
     return arg - wholePart;
 }
 
-int getBiggerNearestInt(float arg)
-{
-    return (int)arg + 1;
-}
-
 inline Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
     return (Uint32*)(surf->pixels + i * surf->pitch + j * sizeof(Uint32));
 }
@@ -81,10 +78,12 @@ SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColo
 
 #include "GameConstants.h"
 #include "GameData.h"
+#include "Vector2D.h"
 
 void loadTextures() {
     loadTexture(textures, "wall2.bmp");
     loadTexture(textures, "wall.bmp");
+    loadTexture(textures, "wall3.bmp");
 }
 
 void loadLightmaps() {
@@ -110,6 +109,38 @@ void fillUpTheMapToBeBox(MapBlock** aMap)
     for(int i = 0; i < mapWidth; ++i)
     {
         aMap[mapHeight-1][i].setDefault();
+    }
+}
+
+void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
+{
+    Vector2D<float> coeffs;
+    coeffs.x = (float)lightmap->w / (float)texture->w ;
+    coeffs.y = (float)lightmap->h / (float)texture->h;
+    for(int i = 0; i < texture->h; ++i) {
+        for(int j = 0; j < texture->w; ++j) {
+
+            Uint32* texPixel = getTexturePixel(texture, i, j);
+            Uint32* lightmapPixel = getTexturePixel(lightmap, (int)(i * coeffs.y),(int)(j * coeffs.x));
+
+            SDL_Color pixelColor = UintToColor(*texPixel);
+            pixelColor = transformColorByLightMap(pixelColor, UintToColor(*lightmapPixel));
+
+            *texPixel = ColorToUint(pixelColor.r, pixelColor.g, pixelColor.b);
+        }
+    }
+}
+
+void doLightMapsToAllTextures()
+{
+    for(int i = 0; i < mapHeight; ++i) {
+        for(int j = 0; j < mapWidth; ++j) {
+            if(map[i][j].getIsLightMapped()) {
+                applyLightMapToTexture(textures.at(map[i][j].getTextureIndex()),
+                                       lightmaps.at(map[i][j].getLightMapIndex()));
+                map[i][j].lightmap = 0;
+            }
+        }
     }
 }
 
