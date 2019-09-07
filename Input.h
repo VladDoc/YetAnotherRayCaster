@@ -6,6 +6,71 @@
 #include "ControlsState.h"
 #include "player.h"
 
+void destroyAWallThatPlayerIsFacing()
+{
+    float distanceToAWall = 0.0f;
+
+    Vector2D<float> eye;
+
+    eye.x = sinf(player.angle);
+    eye.y = cosf(player.angle);
+
+    Vector2D<float> test;
+    test.x = player.x;
+    test.y = player.y;
+
+    int wasWallHit = 0;
+
+    while(!wasWallHit && distanceToAWall < depth)
+        {
+            distanceToAWall += 1.0f / 8.0f;
+
+
+            test.x = player.x + eye.x * distanceToAWall;
+            test.y = player.y + eye.y * distanceToAWall;
+
+            if(test.x < 0 || test.x >= mapWidth || test.y < 0 || test.y >= mapHeight)
+            {
+                return;
+            } else {
+                wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty();
+            }
+        }
+      map[(int)test.y][(int)test.x].setEmpty();
+}
+
+void createRandomColorWallNearby()
+{
+    Vector2D<int> wallLocation;
+    wallLocation.x = (int)(player.x + sinf(player.angle) * 2.0f);
+    wallLocation.y = (int)(player.y + cosf(player.angle) * 2.0f);
+
+    if(map[wallLocation.y][wallLocation.x].isEmpty()) {
+        map[wallLocation.y][wallLocation.x].r = rand() % 64;
+        map[wallLocation.y][wallLocation.x].g = rand() % 64;
+        map[wallLocation.y][wallLocation.x].b = rand() % 64;
+    }
+}
+
+void changeResolution(SDL_Surface** screen, Vector2D<int> res)
+{
+    if(isFullScreen) {
+        *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
+    } else {
+        *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
+    }
+    screenWidth = res.x;
+    screenHeight = res.y;
+
+    horizonCap = calcHorizonCap();
+
+    starsWidth = calcStarsWidth();
+    starsHeight = calcStarsHeight();
+
+    fillUpTheStars();
+    FOV = calcFOV();
+}
+
 void checkControls(SDL_Event event, SDL_Surface** screen) {
     static bool wasSkyColorChangePressed = false;
     static bool wasSkyIsAFloorPressed = false;
@@ -105,6 +170,14 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             if(event.key.keysym.sym == SDLK_F12) {
                 textureGradient = textureGradient ? false : true;
             }
+            if(event.key.keysym.sym == SDLK_F2) {
+                currentRes = clamp(currentRes - 1, 0, resArraySize-1);
+                changeResolution(screen, resolutions[currentRes]);
+            }
+            if(event.key.keysym.sym == SDLK_F3) {
+                currentRes = clamp(currentRes + 1, 0, resArraySize-1);
+                changeResolution(screen, resolutions[currentRes]);
+            }
             break;
         }
         case SDL_KEYUP:
@@ -154,9 +227,17 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             horizonLine += (screenHeight / 2 - event.motion.y) * ((float)screenHeight / 400);
             horizonLine = clamp(horizonLine, -horizonCap, horizonCap);
             break;
+        case SDL_MOUSEBUTTONDOWN:
+            if(event.button.button == SDL_BUTTON_LEFT) {
+                destroyAWallThatPlayerIsFacing();
+            }
+            if(event.button.button == SDL_BUTTON_RIGHT) {
+                createRandomColorWallNearby();
+            }
         }
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
 }
+
 
 void doActions(int frameTime) {
     if(isUpHeld) {

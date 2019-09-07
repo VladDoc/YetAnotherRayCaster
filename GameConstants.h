@@ -6,12 +6,15 @@
 #include <limits>
 
 #include "Utility.h"
+#include "Vector2D.h"
 
 bool textureGradient = false;
 
-const int screenWidth = 800;
-const int screenHeight = 480;
+int screenWidth = 800;
+int screenHeight = 480;
 const int screenBits = 32;
+
+int currentRes = 2;
 
 const int mapHeight = 16;
 const int mapWidth = 16;
@@ -24,19 +27,49 @@ const float rotatingSpeed = 0.1f;
 
 const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
-const float FOV = pi / (6.4f * ((float)screenHeight / (float)screenWidth));
+float calcFOV() {
+    return pi / (6.4f * ((float)screenHeight / (float)screenWidth));
+}
+
+float FOV = calcFOV();
 
 const float targetSpeed = 40.0f;
 
 const float blockSize = 64.0f;
 const float blockBitSize = 1.0f / blockSize;
-const int targetFPS = 60;
+const int targetFPS = 1000;
 
-const int horizonCap = (screenHeight * 2) / 3;
+int calcHorizonCap() {
+    return (screenHeight * 2) / 3;
+}
 
-const int starsWidth = screenWidth * (int)((pi * 2) / FOV);
-const int starsHeight = screenHeight + horizonCap * 2 + 1;
+int horizonCap = calcHorizonCap();
+
+int calcStarsWidth() {
+    return screenWidth * (int)((pi * 2) / FOV);
+}
+
+int calcStarsHeight() {
+    return screenHeight + horizonCap * 2 + 1;
+}
+
+int starsWidth = calcStarsWidth();
+int starsHeight = calcStarsHeight();
 
 Uint32 defWallColor = ColorToUint(45, 20, 0);
 
+const Vector2D<int> resolutions[] =
+    {
+        {320,  240},
+        {640,  480},
+        {800,  480},
+        {800,  600},
+        {1024, 768},
+        {1280, 720},
+        {1366, 768},
+        {1600, 900},
+        {1920, 1080}
+    };
+
+const int resArraySize = 9;
 #endif // GAMECONSTANTS_H_INCLUDED

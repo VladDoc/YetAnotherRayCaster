@@ -84,6 +84,7 @@ void loadTextures() {
     loadTexture(textures, "wall2.bmp");
     loadTexture(textures, "wall.bmp");
     loadTexture(textures, "wall3.bmp");
+    loadTexture(textures, "wall2.bmp");
 }
 
 void loadLightmaps() {
@@ -146,13 +147,25 @@ void doLightMapsToAllTextures()
 
 void fillUpTheStars() {
     srand(256);
+
+    stars = (bool*)realloc(stars, starsWidth * starsHeight);
+    memset(stars, 0, starsWidth * starsHeight);
+
     for(int i = 0; i < starsHeight; ++i) {
         for(int j = 0; j < starsWidth; ++j) {
             if(!(rand() % screenWidth / 2)) {
-                stars[i][j] = true;
+                stars[i * starsWidth + j] = true;
             }
         }
     }
+}
+
+void setWindowPos(int x, int y)
+{
+    char env[80];
+    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", x, y);
+
+    SDL_putenv(env);
 }
 
 #endif // UTILITY_H_INCLUDED

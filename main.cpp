@@ -25,9 +25,63 @@ void freeTextures() {
     }
 }
 
-float getDistanceToTheNearestIntersection(Vector2D<float> currentPosition)
+float degreesToRad(float degrees) {
+    return degrees * (pi / 180);
+}
+
+const float deg90 = degreesToRad(90.0f);
+const float deg180 = degreesToRad(180.0f);
+const float deg270 = degreesToRad(270.0f);
+const float deg360 = pi * 2;
+
+float getDistanceToTheNearestIntersection(const Vector2D<float>& test,
+                                          float ray, const Vector2D<float>& eye)
 {
-    return blockBitSize; // TODO: Implement DDA algorithm
+//    float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+//
+//    Vector2D<float> distances;
+//    Vector2D<float> delta;
+
+//    delta.x = std::abs(1 / eye.x);
+//    delta.y = std::abs(1 / eye.y);
+//
+//    if(eye.x < 0) {
+//        distances.x = getFractialPart(test.x) * delta.x;
+//    } else {
+//        distances.x = (getFractialPart(test.x) + 1.0f - test.x) * delta.x;
+//    }
+//    if(eye.y < 0) {
+//        distances.y = getFractialPart(test.y) * delta.y;
+//    } else {
+//        distances.y = (getFractialPart(test.y) + 1.0f - test.y) * delta.y;
+//    }
+
+
+//    if(bufferRay <= deg90) { // North-east
+//        delta.x = 1.0f - getFractialPart(test.x); // Only this quadrant works so far
+//        delta.y = 1.0f - getFractialPart(test.y);
+//        distances.x = std::abs(delta.x / sinf(ray));
+//        distances.y = std::abs(delta.y / cosf(ray));
+//    } else if(bufferRay <= deg180) { // South-east
+//        delta.x = 1.0f - getFractialPart(test.x);
+//        delta.y = 1.0f - getFractialPart(test.y);
+//        distances.x = std::abs(delta.x / sinf(ray));
+//        distances.y = std::abs(delta.y / cosf(ray));
+//    } else if(bufferRay <= deg270) { // South-west
+//        delta.x = 1.0f - getFractialPart(test.x);
+//        delta.y = 1.0f - getFractialPart(test.y);
+//        distances.x = std::abs(delta.x / sinf(ray));
+//        distances.y = std::abs(delta.y / cosf(ray));
+//    } else { // North-west
+//        delta.x = 1.0f - getFractialPart(test.x);
+//        delta.y = 1.0f - getFractialPart(test.y);
+//        distances.x = std::abs(delta.x / sinf(ray));
+//        distances.y = std::abs(delta.y / cosf(ray));
+//    }
+//
+//    return distances.x < distances.y ? distances.x : distances.y;
+
+      return blockBitSize;
 }
 
 void renderColumn(int j, SDL_Surface* screen) {
@@ -49,7 +103,7 @@ void renderColumn(int j, SDL_Surface* screen) {
 
         while(!wasWallHit && distanceToAWall < depth) // Ray traversal
         {
-            distanceToAWall += getDistanceToTheNearestIntersection(test);
+            distanceToAWall += getDistanceToTheNearestIntersection(test, ray, eye);
 
 
             test.x = player.x + eye.x * distanceToAWall;
@@ -72,7 +126,8 @@ void renderColumn(int j, SDL_Surface* screen) {
             }
         }
 
-        distanceToAWall *= cosf(ray - player.angle - (FOV / (screenWidth * 8))); // You might ask: 'why 8?'. But it seems to give best results yet.
+        // Constant gives slightly better fish-eye correction. Without it walls are a little bit more 'rounded'
+        distanceToAWall *= cosf(ray - player.angle - (FOV / (screenWidth * 8)));
 
         int ceilingHeight;
         if(!easterEgg) {
@@ -91,13 +146,14 @@ void renderColumn(int j, SDL_Surface* screen) {
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
         int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
         bool shouldTextureBeMirrored = false;
+
         for(int i = 0; i < screenHeight; ++i)
         {
             if(i < ceilingHeight)
             {
                 Uint32 pixelColor;
 
-                if(shouldStarsBeRendered && stars[i + (horizonCap - horizonLine)][skyWidthIndex]) {
+                if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                     pixelColor = ColorToUint(clamp(rand() % 256, 165, 255),
                                              clamp(rand() % 256, 165, 255),
                                              clamp(rand() % 256, 165, 255));
@@ -133,7 +189,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                         if(map[(int)(checkY - blockBitSize)][(int)test.x].isEmpty() ||
                            map[(int)(checkY + blockBitSize)][(int)test.x].isEmpty()   ) {
                             scalingVar = test.x; // Then wall is along horizontal axis
-                            if(getFractialPart(test.y) > 0.5) { // If y component greater than a half then it's north wall
+                            if(getFractialPart(test.y) > 0.5) { // If y component greater than a half then it's a north wall
                                 shouldTextureBeMirrored = true;
                             }
                         } else {
@@ -190,7 +246,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                                              clamp((int)(50 * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200),
                                              clamp((int)(20 * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200));
                 } else {
-                    if(shouldStarsBeRendered && stars[i + (horizonCap - horizonLine)][skyWidthIndex]) {
+                    if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                         pixelColor = ColorToUint(clamp(rand() % 256, 165, 255),
                                                  clamp(rand() % 256, 165, 255),
                                                  clamp(rand() % 256, 165, 255));
@@ -223,10 +279,8 @@ int main(int argc, char** argv)
 
     atexit(SDL_Quit);
 
-    char env[80];
-    sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", (SDL_GetVideoInfo()->current_w - screenWidth) / 2, 30);
+    setWindowPos(8, 30);
 
-    SDL_putenv(env);
     SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
                                            SDL_HWSURFACE | SDL_DOUBLEBUF);
 
@@ -293,5 +347,6 @@ int main(int argc, char** argv)
 
     freeTextures();
     SDL_free(screen);
+    free(stars);
     return 0;
 }

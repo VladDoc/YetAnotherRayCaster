@@ -197,7 +197,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1567520331 source:d:\progs\cpp\raycaster\main.cpp
+1567895133 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
@@ -219,26 +219,27 @@
 
 1567238722 d:\progs\cpp\raycaster\controlsstate.h
 
-1567520431 d:\progs\cpp\raycaster\utility.h
+1567684484 d:\progs\cpp\raycaster\utility.h
 	<vector>
 	"GameConstants.h"
 	"GameData.h"
 	"Vector2D.h"
 
-1567404745 d:\progs\cpp\raycaster\gameconstants.h
+1567855150 d:\progs\cpp\raycaster\gameconstants.h
 	<limits>
 	"Utility.h"
+	"Vector2D.h"
 
-1567346729 d:\progs\cpp\raycaster\gamedata.h
+1567616730 d:\progs\cpp\raycaster\gamedata.h
 	<vector>
 	"GameConstants.h"
 	"MapBlock.h"
 
-1567254488 d:\progs\cpp\raycaster\input.h
+1567858877 d:\progs\cpp\raycaster\input.h
 	"ControlsState.h"
 	"player.h"
 
-1567247497 d:\progs\cpp\raycaster\player.h
+1567856600 d:\progs\cpp\raycaster\player.h
 
-1566566397 d:\progs\cpp\raycaster\vector2d.h
+1567878474 d:\progs\cpp\raycaster\vector2d.h
 
