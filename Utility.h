@@ -24,7 +24,6 @@ inline float clampLooping(float value, float min, float max) {
     if(value < min) {
         return max - fmod(value, max);
     }
-
     return value;
 }
 
@@ -85,6 +84,7 @@ void loadTextures() {
     loadTexture(textures, "wall.bmp");
     loadTexture(textures, "wall3.bmp");
     loadTexture(textures, "wall2.bmp");
+    loadTexture(textures, "hellaworld.bmp");
 }
 
 void loadLightmaps() {

@@ -14,5 +14,6 @@ bool shouldStarsBeRendered = true;
 bool isFloorASky = false;
 bool isFullScreen = false;
 bool easterEgg = false;
+bool naiveApproach = false;
 
 #endif // CONTROLSSTATE_H_INCLUDED

@@ -19,7 +19,7 @@ int currentRes = 2;
 const int mapHeight = 16;
 const int mapWidth = 16;
 
-const float pi = 3.14159f;
+const float pi = 3.14159265358979323846f;
 const float depth =  std::numeric_limits<float>::max();
 
 const float defWalkingSpeed = 0.2f;
@@ -36,7 +36,10 @@ float FOV = calcFOV();
 const float targetSpeed = 40.0f;
 
 const float blockSize = 64.0f;
-const float blockBitSize = 1.0f / blockSize;
+const float naiveBlockBitSize = 1.0f / blockSize;
+const float nonNaiveBBS = 1.0f / 8192.0f;
+float blockBitSize = nonNaiveBBS;
+float horisontalBlockCheckStep = nonNaiveBBS * 2;
 const int targetFPS = 1000;
 
 int calcHorizonCap() {

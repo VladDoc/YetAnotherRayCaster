@@ -170,6 +170,17 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             if(event.key.keysym.sym == SDLK_F12) {
                 textureGradient = textureGradient ? false : true;
             }
+            if(event.key.keysym.sym == SDLK_F11) {
+                if(naiveApproach) {
+                    naiveApproach = false;
+                    blockBitSize = nonNaiveBBS;
+                    horisontalBlockCheckStep = nonNaiveBBS * 2;
+                } else {
+                    naiveApproach = true;
+                    blockBitSize = naiveBlockBitSize;
+                    horisontalBlockCheckStep = naiveBlockBitSize;
+                }
+            }
             if(event.key.keysym.sym == SDLK_F2) {
                 currentRes = clamp(currentRes - 1, 0, resArraySize-1);
                 changeResolution(screen, resolutions[currentRes]);

@@ -29,59 +29,88 @@ float degreesToRad(float degrees) {
     return degrees * (pi / 180);
 }
 
-const float deg90 = degreesToRad(90.0f);
-const float deg180 = degreesToRad(180.0f);
-const float deg270 = degreesToRad(270.0f);
+const float deg90 = pi / 2;
+const float deg180 = pi;
+const float deg270 = (pi * 3) / 2;
 const float deg360 = pi * 2;
 
-float getDistanceToTheNearestIntersection(const Vector2D<float>& test,
-                                          float ray, const Vector2D<float>& eye)
+float fractionBetweenNumbers(float arg, float min, float max)
 {
-//    float bufferRay = clampLooping(ray, 0.0f, pi * 2);
-//
-//    Vector2D<float> distances;
-//    Vector2D<float> delta;
+    return arg - min;
+}
 
-//    delta.x = std::abs(1 / eye.x);
-//    delta.y = std::abs(1 / eye.y);
-//
-//    if(eye.x < 0) {
-//        distances.x = getFractialPart(test.x) * delta.x;
-//    } else {
-//        distances.x = (getFractialPart(test.x) + 1.0f - test.x) * delta.x;
-//    }
-//    if(eye.y < 0) {
-//        distances.y = getFractialPart(test.y) * delta.y;
-//    } else {
-//        distances.y = (getFractialPart(test.y) + 1.0f - test.y) * delta.y;
-//    }
+float invertFraction(float arg)
+{
+    int wholePart = (int)arg;
+    float fraction = arg - wholePart;
+    fraction = 1.0f - fraction;
+    return (float)wholePart + fraction;
+}
+
+float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray)
+{
+
+    /*
+     *
+     *          Actually gives speed up, but is held on duct tape.
+     *          Spend a whole week getting it to work.
+     *          Almost lost my sanity in the process.
+     *          Performance changes depending on
+     *          which quadrant of circle player currently is.
+     *
+     */
+    if(!naiveApproach) {
+
+        // Appearantly clamp looping function isn't reliable enough.
+        // Will rewrite it in the future.
+        int howManyPairsOfPies = ray / (pi * 2);
+        float bufferRay = ray > 0 ? ray - (howManyPairsOfPies * pi * 2)
+                                  : (pi * 2) - std::abs(ray) - (howManyPairsOfPies * pi * 2);
+
+        Vector2D<float> distances;
+        Vector2D<float> delta;
+        Vector2D<float> scaleCoeffs;
 
 
-//    if(bufferRay <= deg90) { // North-east
-//        delta.x = 1.0f - getFractialPart(test.x); // Only this quadrant works so far
-//        delta.y = 1.0f - getFractialPart(test.y);
-//        distances.x = std::abs(delta.x / sinf(ray));
-//        distances.y = std::abs(delta.y / cosf(ray));
-//    } else if(bufferRay <= deg180) { // South-east
-//        delta.x = 1.0f - getFractialPart(test.x);
-//        delta.y = 1.0f - getFractialPart(test.y);
-//        distances.x = std::abs(delta.x / sinf(ray));
-//        distances.y = std::abs(delta.y / cosf(ray));
-//    } else if(bufferRay <= deg270) { // South-west
-//        delta.x = 1.0f - getFractialPart(test.x);
-//        delta.y = 1.0f - getFractialPart(test.y);
-//        distances.x = std::abs(delta.x / sinf(ray));
-//        distances.y = std::abs(delta.y / cosf(ray));
-//    } else { // North-west
-//        delta.x = 1.0f - getFractialPart(test.x);
-//        delta.y = 1.0f - getFractialPart(test.y);
-//        distances.x = std::abs(delta.x / sinf(ray));
-//        distances.y = std::abs(delta.y / cosf(ray));
-//    }
-//
-//    return distances.x < distances.y ? distances.x : distances.y;
 
-      return blockBitSize;
+
+        if(bufferRay <= deg90) { // North-east
+            delta.x = 1.0f - getFractialPart(test.x); // Only this quadrant works so far
+            scaleCoeffs.x = sinf(ray);
+            delta.y = 1.0f - getFractialPart(test.y);
+            scaleCoeffs.y = cosf(ray);
+        } else if(bufferRay <= deg180) { // South-east
+            delta.x = 1.0f - getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray);
+            delta.y = getFractialPart(test.y);
+            scaleCoeffs.y = cosf(ray + pi);
+        } else if(bufferRay <= deg270) { // South-west
+            delta.x = getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray + pi);
+            delta.y = getFractialPart(test.y);
+            scaleCoeffs.y = cosf(ray + pi);
+        } else { // North-west
+            delta.x = getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray + pi);
+            delta.y = 1.0f - getFractialPart(test.y - blockBitSize);
+            scaleCoeffs.y = cosf(ray);
+        }
+
+        if(delta.x < blockBitSize) {
+            delta.x = blockBitSize;
+        }
+        if(delta.y < blockBitSize) {
+            delta.y = blockBitSize;
+        }
+
+        distances.x = clamp(std::abs(delta.x / clamp(scaleCoeffs.x, std::numeric_limits<float>::min(), 1.0f)), std::numeric_limits<float>::min(), 1.44f);
+        distances.y = clamp(std::abs(delta.y / clamp(scaleCoeffs.y, std::numeric_limits<float>::min(), 1.0f)), std::numeric_limits<float>::min(), 1.44f);
+
+        return distances.x < distances.y ? distances.x : distances.y;
+
+    } else {
+        return blockBitSize;
+    }
 }
 
 void renderColumn(int j, SDL_Surface* screen) {
@@ -103,7 +132,7 @@ void renderColumn(int j, SDL_Surface* screen) {
 
         while(!wasWallHit && distanceToAWall < depth) // Ray traversal
         {
-            distanceToAWall += getDistanceToTheNearestIntersection(test, ray, eye);
+            distanceToAWall += getDistanceToTheNearestIntersection(test, ray);
 
 
             test.x = player.x + eye.x * distanceToAWall;
@@ -145,7 +174,25 @@ void renderColumn(int j, SDL_Surface* screen) {
 
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
         int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
+
         bool shouldTextureBeMirrored = false;
+        bool isHorisontal = false;
+        float checkY = test.y;
+        float scalingVar;
+
+        if(map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
+           map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
+                isHorisontal = true;
+                scalingVar = test.x; // Then wall is along horizontal axis
+                if(getFractialPart(test.y) > 0.5) { // If y component greater than a half then it's a north wall
+                    shouldTextureBeMirrored = true;
+                }
+        } else {
+                scalingVar = test.y;
+                if(getFractialPart(test.x) < 0.5) {
+                    shouldTextureBeMirrored = true;
+                }
+        }
 
         for(int i = 0; i < screenHeight; ++i)
         {
@@ -173,9 +220,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                 MapBlock currentBlock = map[(int)test.y][(int)test.x];
 
                     if(currentBlock.getIsTextured()) {
-                        bool isHorisontal = false;
                         bool isLightMap = currentBlock.getIsLightMapped();
-                        float checkY = test.y;
                         SDL_Surface* texture = textures.at(currentBlock.getTextureIndex());
                         SDL_Surface* lightmap = NULL;
                         if(isLightMap) {
@@ -184,20 +229,7 @@ void renderColumn(int j, SDL_Surface* screen) {
 
                         Uint32* texturePixel = &defWallColor;
                         Uint32* lightmapPixel;
-                        float scalingVar;
 
-                        if(map[(int)(checkY - blockBitSize)][(int)test.x].isEmpty() ||
-                           map[(int)(checkY + blockBitSize)][(int)test.x].isEmpty()   ) {
-                            scalingVar = test.x; // Then wall is along horizontal axis
-                            if(getFractialPart(test.y) > 0.5) { // If y component greater than a half then it's a north wall
-                                shouldTextureBeMirrored = true;
-                            }
-                        } else {
-                            scalingVar = test.y;
-                            if(getFractialPart(test.x) < 0.5) {
-                                shouldTextureBeMirrored = true;
-                            }
-                        }
                         if(!shouldTextureBeMirrored) {
                             texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(scalingVar) * (float)texture->w));
@@ -235,6 +267,12 @@ void renderColumn(int j, SDL_Surface* screen) {
                     pixelColor = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
                                              clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
                                              clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
+                }
+                if(!isHorisontal) {
+                    SDL_Color pixelRGB = UintToColor(pixelColor);
+                    pixelColor = ColorToUint(clamp(pixelRGB.r - 8, 0, 255),
+                                             clamp(pixelRGB.g - 8, 0, 255),
+                                             clamp(pixelRGB.b - 8, 0, 255));
                 }
                 *pixel = pixelColor;
             }
