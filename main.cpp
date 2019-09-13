@@ -75,7 +75,7 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
 
 
         if(bufferRay <= deg90) { // North-east
-            delta.x = 1.0f - getFractialPart(test.x); // Only this quadrant works so far
+            delta.x = 1.0f - getFractialPart(test.x); // The most performant quadrant
             scaleCoeffs.x = sinf(ray);
             delta.y = 1.0f - getFractialPart(test.y);
             scaleCoeffs.y = cosf(ray);
