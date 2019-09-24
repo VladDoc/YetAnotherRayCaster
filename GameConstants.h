@@ -20,15 +20,20 @@ const int mapHeight = 16;
 const int mapWidth = 16;
 
 const float pi = 3.14159265358979323846f;
-const float depth =  std::numeric_limits<float>::max();
+const float depth =  std::numeric_limits<float>::infinity();
 
 const float defWalkingSpeed = 0.2f;
 const float rotatingSpeed = 0.1f;
 
+const float deg90 = pi / 2;
+const float deg180 = pi;
+const float deg270 = (pi * 3) / 2;
+const float deg360 = pi * 2;
+
 const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
 float calcFOV() {
-    return pi / (6.4f * ((float)screenHeight / (float)screenWidth));
+    return pi / (6.0f * ((float)screenHeight / (float)screenWidth));
 }
 
 float FOV = calcFOV();
@@ -37,10 +42,10 @@ const float targetSpeed = 40.0f;
 
 const float blockSize = 64.0f;
 const float naiveBlockBitSize = 1.0f / blockSize;
-const float nonNaiveBBS = 1.0f / 8192.0f;
+const float nonNaiveBBS = 1.0f / 65536.0f / 8;
 float blockBitSize = nonNaiveBBS;
 float horisontalBlockCheckStep = nonNaiveBBS * 2;
-const int targetFPS = 1000;
+const int targetFPS = 60;
 
 int calcHorizonCap() {
     return (screenHeight * 2) / 3;

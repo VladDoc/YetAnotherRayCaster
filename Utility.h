@@ -4,6 +4,7 @@
 #define UTILITY_H_INCLUDED
 
 #include <vector>
+#include <random>
 
 template <typename T>
 inline T clamp(T value, T min, T max) {
@@ -17,14 +18,13 @@ inline T clamp(T value, T min, T max) {
     return value;
 }
 
+
+// Works only for positive min and max
 inline float clampLooping(float value, float min, float max) {
-    if(value > max) {
-        return min + fmod(value, max);
-    }
-    if(value < min) {
-        return max - fmod(value, max);
-    }
-    return value;
+    int howManyTimesMax = value / max;
+    return value > 0 ? value - (howManyTimesMax * max)
+                     : max - std::abs(value) - (howManyTimesMax * max);
+
 }
 
 Uint32 ColorToUint(int R, int G, int B)
@@ -51,8 +51,26 @@ float getFractialPart(float arg)
     return arg - wholePart;
 }
 
+
+float fractionBetweenNumbers(float arg, float min, float max)
+{
+    return arg - min;
+}
+
+float invertFraction(float arg)
+{
+    int wholePart = (int)arg;
+    float fraction = arg - wholePart;
+    fraction = 1.0f - fraction;
+    return (float)wholePart + fraction;
+}
+
 inline Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
     return (Uint32*)(surf->pixels + i * surf->pitch + j * sizeof(Uint32));
+}
+
+inline Uint32* getTransposedTexturePixel(SDL_Surface* surf, int i, int j) {
+    return (Uint32*)(surf->pixels + j * surf->pitch + i * sizeof(Uint32));
 }
 
 void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
@@ -78,6 +96,72 @@ SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColo
 #include "GameConstants.h"
 #include "GameData.h"
 #include "Vector2D.h"
+
+float degreesToRad(float degrees) {
+    return degrees * (pi / 180);
+}
+
+float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray)
+{
+
+    /*
+     *
+     *          Actually gives speed up, but is held on duct tape.
+     *          Spend a whole week getting it to work.
+     *          Almost lost my sanity in the process.
+     *          Performance changes depending on
+     *          which quadrant of circle player currently is.
+     *
+     */
+    if(!naiveApproach) {
+
+        float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+
+        Vector2D<float> distances;
+        Vector2D<float> delta;
+        Vector2D<float> scaleCoeffs;
+
+
+        if(bufferRay <= deg90) { // North-east
+            delta.x = 1.0f - getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray);
+            delta.y = 1.0f - getFractialPart(test.y);
+            scaleCoeffs.y = cosf(ray);
+        } else if(bufferRay <= deg180) { // South-east
+            delta.x = 1.0f - getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray);
+            delta.y = getFractialPart(test.y);
+            scaleCoeffs.y = cosf(ray + pi);
+        } else if(bufferRay <= deg270) { // South-west
+            delta.x = getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray + pi);
+            delta.y = getFractialPart(test.y);
+            scaleCoeffs.y = cosf(ray + pi);
+        } else { // North-west
+            delta.x = getFractialPart(test.x);
+            scaleCoeffs.x = sinf(ray + pi);
+            delta.y = 1.0f - getFractialPart(test.y - blockBitSize); // without constant ray overshoots walls by x axis
+            scaleCoeffs.y = cosf(ray);
+        }
+
+         // Delta should not be zero otherwise renderer will loop forever.
+        if(delta.x < blockBitSize) {
+            delta.x = blockBitSize;
+        }
+        if(delta.y < blockBitSize) {
+            delta.y = blockBitSize;
+        }
+
+        distances.x = delta.x / clamp(scaleCoeffs.x, std::numeric_limits<float>::min(), 1.0f);
+
+        distances.y = delta.y / clamp(scaleCoeffs.y, std::numeric_limits<float>::min(), 1.0f);
+
+        return distances.x < distances.y ? distances.x : distances.y;
+
+    } else {
+        return blockBitSize;
+    }
+}
 
 void loadTextures() {
     loadTexture(textures, "wall2.bmp");
@@ -145,15 +229,40 @@ void doLightMapsToAllTextures()
     }
 }
 
-void fillUpTheStars() {
-    srand(256);
+void transposeTexture(SDL_Surface* txt)
+{
+    for(int i = 0; i < txt->h; ++i) {
+        for(int j = 0; j < txt->w; ++j) {
+            Uint32* oldPixel = getTexturePixel(txt, i, j);
+            Uint32* newPixel = getTexturePixel(txt, j, i);
 
+            Uint32 temp = *oldPixel;
+            *oldPixel = *newPixel;
+            *newPixel = temp;
+        }
+    }
+
+    int temp = txt->h;
+    txt->h = txt->w;
+    txt->w = temp;
+}
+
+void transposeTextures(std::vector<SDL_Surface*>& txts)
+{
+    for(int i = 0; i < txts.size(); ++i) {
+        transposeTexture(txts.at(i));
+    }
+}
+
+void fillUpTheStars() {
+    std::mt19937 random;
+    random.seed(1);
     stars = (bool*)realloc(stars, starsWidth * starsHeight);
     memset(stars, 0, starsWidth * starsHeight);
 
     for(int i = 0; i < starsHeight; ++i) {
         for(int j = 0; j < starsWidth; ++j) {
-            if(!(rand() % screenWidth / 2)) {
+            if(!(random() % screenWidth / 2)) {
                 stars[i * starsWidth + j] = true;
             }
         }

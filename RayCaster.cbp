@@ -49,6 +49,7 @@
 		<Unit filename="MapBlock.h" />
 		<Unit filename="Utility.h" />
 		<Unit filename="Vector2D.h" />
+		<Unit filename="doctest.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="player.h" />
 		<Extensions>

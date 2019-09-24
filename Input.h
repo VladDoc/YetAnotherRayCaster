@@ -23,7 +23,7 @@ void destroyAWallThatPlayerIsFacing()
 
     while(!wasWallHit && distanceToAWall < depth)
         {
-            distanceToAWall += 1.0f / 8.0f;
+            distanceToAWall += getDistanceToTheNearestIntersection(test, player.angle);
 
 
             test.x = player.x + eye.x * distanceToAWall;
@@ -42,8 +42,11 @@ void destroyAWallThatPlayerIsFacing()
 void createRandomColorWallNearby()
 {
     Vector2D<int> wallLocation;
-    wallLocation.x = (int)(player.x + sinf(player.angle) * 2.0f);
-    wallLocation.y = (int)(player.y + cosf(player.angle) * 2.0f);
+    wallLocation.x = (int)(player.x + sinf(player.angle) * 3.0f);
+    wallLocation.y = (int)(player.y + cosf(player.angle) * 3.0f);
+
+    wallLocation.x = clamp(wallLocation.x, 0, mapWidth);
+    wallLocation.y = clamp(wallLocation.y, 0, mapHeight);
 
     if(map[wallLocation.y][wallLocation.x].isEmpty()) {
         map[wallLocation.y][wallLocation.x].r = rand() % 64;
@@ -244,6 +247,14 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             }
             if(event.button.button == SDL_BUTTON_RIGHT) {
                 createRandomColorWallNearby();
+            }
+            if(event.button.button == SDL_BUTTON_WHEELDOWN) {
+                FOV -= 0.05f;
+                FOV = clamp(FOV, pi / 8, pi);
+            }
+            if(event.button.button == SDL_BUTTON_WHEELUP) {
+                FOV += 0.05f;
+                FOV = clamp(FOV, pi / 8, pi);
             }
         }
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
