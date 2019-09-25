@@ -124,9 +124,9 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             {
                 if(!wasSkyColorChangePressed)
                 {
-                    skyColor.r = rand() % 40;
-                    skyColor.g = rand() % 40;
-                    skyColor.b = rand() % 40;
+                    skyColor.r = rand() % 64;
+                    skyColor.g = rand() % 64;
+                    skyColor.b = rand() % 64;
                     wasSkyColorChangePressed = true;
                 }
             }

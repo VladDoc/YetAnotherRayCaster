@@ -132,9 +132,9 @@ void renderColumn(int j, SDL_Surface* screen) {
                                              clamp(rand() % 256, 165, 255),
                                              clamp(rand() % 256, 165, 255));
                 } else {
-                    pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 128) / 128), 0, 255),
-                                             clamp((int)(skyColor.g * (float)(i - horizonLine + 128) / 128), 0, 255),
-                                             clamp((int)(skyColor.b * (float)(i - horizonLine + 128) / 128), 0, 255));
+                    pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                             clamp((int)(skyColor.g * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                             clamp((int)(skyColor.b * (float)(i - horizonLine + 256) / 256), 0, 255));
                 }
                 *pixel = pixelColor;
             }
@@ -200,18 +200,18 @@ void renderColumn(int j, SDL_Surface* screen) {
             {
                 Uint32 pixelColor;
                 if(!isFloorASky) {
-                    pixelColor = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200),
-                                             clamp((int)(50 * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200),
-                                             clamp((int)(20 * (float)(screenHeight - i + horizonLine / 2 + 128) / 128), 0, 200));
+                    pixelColor = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200),
+                                             clamp((int)(90 * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200),
+                                             clamp((int)(30 * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200));
                 } else {
                     if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                         pixelColor = ColorToUint(clamp(rand() % 256, 165, 255),
                                                  clamp(rand() % 256, 165, 255),
                                                  clamp(rand() % 256, 165, 255));
                     } else {
-                        pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 128) / 128), 0, 255),
-                                                 clamp((int)(skyColor.g * (float)(i - horizonLine + 128) / 128), 0, 255),
-                                                 clamp((int)(skyColor.b * (float)(i - horizonLine + 128) / 128), 0, 255));
+                        pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                                 clamp((int)(skyColor.g * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                                 clamp((int)(skyColor.b * (float)(i - horizonLine + 256) / 256), 0, 255));
                     }
                 }
                 *pixel = (Uint32)pixelColor;
@@ -222,8 +222,8 @@ void renderColumn(int j, SDL_Surface* screen) {
 int main(int argc, char** argv)
 {
     defSkyColor.r = 0;
-    defSkyColor.g = 10;
-    defSkyColor.b = 50;
+    defSkyColor.g = 10 * 2;
+    defSkyColor.b = 50 * 2;
 
     skyColor = defSkyColor;
 
