@@ -17,6 +17,10 @@ bool done = false;
 std::vector<SDL_Surface*> textures;
 std::vector<SDL_Surface*> lightmaps;
 
+// m_ stands for mirrored
+std::vector<SDL_Surface*> m_textures;
+std::vector<SDL_Surface*> m_lightmaps;
+
 SDL_Color defSkyColor;
 SDL_Color skyColor;
 
@@ -39,6 +43,7 @@ MapBlock map[mapHeight][mapWidth] =
     {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
+
 
 bool* stars;
 

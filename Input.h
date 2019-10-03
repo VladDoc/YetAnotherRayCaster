@@ -192,6 +192,15 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
                 currentRes = clamp(currentRes + 1, 0, resArraySize-1);
                 changeResolution(screen, resolutions[currentRes]);
             }
+            if(event.key.keysym.sym == SDLK_F5) {
+                if(!vSync) {
+                    targetFPS = 60;
+                    vSync = true;
+                } else {
+                    targetFPS = 1000;
+                    vSync = false;
+                }
+            }
             break;
         }
         case SDL_KEYUP:

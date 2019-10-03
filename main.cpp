@@ -115,9 +115,16 @@ void renderColumn(int j, SDL_Surface* screen) {
         bool isTextured = currentBlock.getIsTextured();
         bool isLightMap = currentBlock.getIsLightMapped();
 
-        // Sometimes if works even if it shouldn't, which causes game to segfault, to prevent that I clamp index.
-        if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size())];
-        if(isLightMap) lightmap = lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size())];
+
+        if(!shouldTextureBeMirrored) {
+
+            // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
+            if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size())];
+            if(isLightMap) lightmap = lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size())];
+        } else {
+            if(isTextured) texture = m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size())];
+            if(isLightMap) lightmap = m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size())];
+        }
 
 
         for(int i = 0; i < screenHeight; ++i)
@@ -141,39 +148,14 @@ void renderColumn(int j, SDL_Surface* screen) {
             else if(i >= ceilingHeight && i < floorHeight)
             {
                 int wallSizeOnScreen = floorHeight - ceilingHeight;
-                Uint32 pixelColor;
+                Uint32 pixelColor = defWallColor;
+                Uint32* texturePixel = NULL;
+                Uint32* lightmapPixel = NULL;
 
                     if(isTextured) {
-
-                        Uint32* texturePixel;
-                        Uint32* lightmapPixel;
-
-                        if(!shouldTextureBeMirrored) {
-                            texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
+                        texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
                                                            (int)(getFractialPart(scalingVar) * (float)texture->w));
-
-                            if(isLightMap) {
-                                lightmapPixel = getTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
-                                                                (int)(getFractialPart(scalingVar) * (float)lightmap->w));
-                            }
-                        } else {
-                            texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
-                                                           texture->w - (int)(getFractialPart(scalingVar) * (float)texture->w));
-
-                            if(isLightMap) {
-                                lightmapPixel = getTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
-                                                                lightmap->w - (int)(getFractialPart(scalingVar) * (float)lightmap->w));
-                            }
-                        }
-                    if(isLightMap) {
-                        SDL_Color texColor = UintToColor(*texturePixel);
-                        SDL_Color lightColor = UintToColor(*lightmapPixel);
-                        SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
-
-                        pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
-                    } else {
                         pixelColor = *texturePixel;
-                    }
                     if(textureGradient) {
                         SDL_Color pixelRGB = UintToColor(pixelColor);
 
@@ -186,13 +168,27 @@ void renderColumn(int j, SDL_Surface* screen) {
                                              clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
                                              clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
                 }
-                if(!isHorisontal) {
-                    SDL_Color pixelRGB = UintToColor(pixelColor);
-                    int brightnessSum = (pixelRGB.r + pixelRGB.g + pixelRGB.b) / 3;
-                    brightnessSum /= 6;
-                    pixelColor = ColorToUint(clamp(pixelRGB.r - brightnessSum, 0, 255),
-                                             clamp(pixelRGB.g - brightnessSum, 0, 255),
-                                             clamp(pixelRGB.b - brightnessSum, 0, 255));
+                if(isLightMap) {
+                        lightmapPixel = getTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
+                                                        (int)(getFractialPart(scalingVar) * (float)lightmap->w));
+                        SDL_Color texColor = UintToColor(pixelColor);
+                        SDL_Color lightColor = UintToColor(*lightmapPixel);
+                        SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
+
+                        pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
+                    }
+                if(isHorisontal) {
+                    if(isTextured) {
+                        // Doing fast pixel transformation for the texture, so the performance won't suffer
+                        pixelColor = (pixelColor >> 1) & 0x7F7F7F;
+                    } else {
+                        SDL_Color pixelRGB = UintToColor(pixelColor);
+                        int brightnessSum = (pixelRGB.r + pixelRGB.g + pixelRGB.b) / 3;
+                        brightnessSum /= 3;
+                        pixelColor = ColorToUint(clamp(pixelRGB.r - brightnessSum, 0, 255),
+                                                 clamp(pixelRGB.g - brightnessSum, 0, 255),
+                                                 clamp(pixelRGB.b - brightnessSum, 0, 255));
+                    }
                 }
                 *pixel = pixelColor;
             }
@@ -248,12 +244,22 @@ int main(int argc, char** argv)
 
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
-    loadTextures();
-    loadLightmaps();
-//    transposeTextures(textures);
-//    transposeTextures(lightmaps);
-    doLightMapsToAllTextures();
+    loadTextures(textures);
+    loadTextures(m_textures);
+
+    loadLightmaps(lightmaps);
+    loadLightmaps(m_lightmaps);
+
+    mirrorTextures(m_textures);
+    mirrorTextures(m_lightmaps);
+
+    doLightMapsToAllTextures(textures, lightmaps);
+    doLightMapsToAllTextures(m_textures, m_lightmaps);
+    setLightMapsTo0();
     fillUpTheStars();
+
+//    map[7][3].lightmap = 1;
+//    map[7][3].r = 70;
 
     if(textures.empty() || lightmaps.empty())
     {

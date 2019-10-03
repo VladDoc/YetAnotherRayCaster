@@ -45,7 +45,7 @@ const float naiveBlockBitSize = 1.0f / blockSize;
 const float nonNaiveBBS = 1.0f / 65536.0f / 8;
 float blockBitSize = nonNaiveBBS;
 float horisontalBlockCheckStep = nonNaiveBBS * 2;
-const int targetFPS = 60;
+int targetFPS = 1000;
 
 int calcHorizonCap() {
     return (screenHeight * 2) / 3;

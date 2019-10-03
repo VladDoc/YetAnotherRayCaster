@@ -163,16 +163,17 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
     }
 }
 
-void loadTextures() {
-    loadTexture(textures, "wall2.bmp");
-    loadTexture(textures, "wall.bmp");
-    loadTexture(textures, "wall3.bmp");
-    loadTexture(textures, "wall2.bmp");
-    loadTexture(textures, "hellaworld.bmp");
+void loadTextures(std::vector<SDL_Surface*>& txt) {
+    loadTexture(txt, "wall2.bmp");
+    loadTexture(txt, "wall.bmp");
+    loadTexture(txt, "wall3.bmp");
+    loadTexture(txt, "wall2.bmp");
+    loadTexture(txt, "hellaworld.bmp");
 }
 
-void loadLightmaps() {
-    loadTexture(lightmaps, "wall2bumpmap.bmp");
+
+void loadLightmaps(std::vector<SDL_Surface*>& lmp) {
+    loadTexture(lmp, "wall2bumpmap.bmp");
 }
 
 void fillUpTheMapToBeBox(MapBlock** aMap)
@@ -197,6 +198,25 @@ void fillUpTheMapToBeBox(MapBlock** aMap)
     }
 }
 
+void mirrorTexture(SDL_Surface* txt) {
+    for(int i = 0; i < txt->h; ++i) {
+        for(int j = 0; j < txt->w / 2; ++j) {
+            Uint32* left = getTexturePixel(txt, i, j);
+            Uint32* right = getTexturePixel(txt, i, txt->w - j - 1);
+
+            Uint32 temp = *left;
+            *left = *right;
+            *right = temp;
+        }
+    }
+}
+
+void mirrorTextures(std::vector<SDL_Surface*>& txt) {
+    for(auto i = txt.begin(); i != txt.end(); i++) {
+        mirrorTexture(*i);
+    }
+}
+
 void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
 {
     Vector2D<float> coeffs;
@@ -216,15 +236,24 @@ void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
     }
 }
 
-void doLightMapsToAllTextures()
+void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
+                              std::vector<SDL_Surface*>& lmp)
 {
     for(int i = 0; i < mapHeight; ++i) {
         for(int j = 0; j < mapWidth; ++j) {
-            if(map[i][j].getIsLightMapped()) {
-                applyLightMapToTexture(textures.at(map[i][j].getTextureIndex()),
-                                       lightmaps.at(map[i][j].getLightMapIndex()));
-                map[i][j].lightmap = 0;
+            if(map[i][j].getIsLightMapped() && map[i][j].getIsTextured()) {
+                applyLightMapToTexture(txt.at(map[i][j].getTextureIndex()),
+                                       lmp.at(map[i][j].getLightMapIndex()));
             }
+        }
+    }
+}
+
+void setLightMapsTo0()
+{
+    for(int i = 0; i < mapHeight; ++i) {
+        for(int j = 0; j < mapWidth; ++j) {
+            map[i][j].lightmap = 0;
         }
     }
 }
