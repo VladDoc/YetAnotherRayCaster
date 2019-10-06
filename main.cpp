@@ -159,8 +159,9 @@ void renderColumn(int j, SDL_Surface* screen) {
                 Uint32* lightmapPixel = NULL;
 
                     if(isTextured) {
-                        texturePixel = getTransposedTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
-                                                       (int)(getFractialPart(scalingVar) * (float)texture->w));
+                        // Swaped w and h because the texture is transposed. Same with lightmaps.
+                        texturePixel = getTransposedTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->w / (float)wallSizeOnScreen)),
+                                                       (int)(getFractialPart(scalingVar) * (float)texture->h));
                         pixelColor = *texturePixel;
                     if(textureGradient) {
                         SDL_Color pixelRGB = UintToColor(pixelColor);
@@ -182,8 +183,8 @@ void renderColumn(int j, SDL_Surface* screen) {
                     }
                 }
                 if(isLightMap) {
-                        lightmapPixel = getTransposedTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
-                                                        (int)(getFractialPart(scalingVar) * (float)lightmap->w));
+                        lightmapPixel = getTransposedTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->w / (float)wallSizeOnScreen)),
+                                                        (int)(getFractialPart(scalingVar) * (float)lightmap->h));
                         SDL_Color texColor = UintToColor(pixelColor);
                         SDL_Color lightColor = UintToColor(*lightmapPixel);
                         SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
