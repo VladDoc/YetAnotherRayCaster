@@ -258,28 +258,40 @@ void setLightMapsTo0()
     }
 }
 
-void transposeTexture(SDL_Surface* txt)
-{
-    for(int i = 0; i < txt->h; ++i) {
-        for(int j = 0; j < txt->w; ++j) {
-            Uint32* oldPixel = getTexturePixel(txt, i, j);
-            Uint32* newPixel = getTexturePixel(txt, j, i);
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    Uint32 rmask = 0xff000000;
+    Uint32 gmask = 0x00ff0000;
+    Uint32 bmask = 0x0000ff00;
+    Uint32 amask = 0x000000ff;
+#else
+    Uint32 rmask = 0x000000ff;
+    Uint32 gmask = 0x0000ff00;
+    Uint32 bmask = 0x00ff0000;
+    Uint32 amask = 0xff000000;
+#endif
 
-            Uint32 temp = *oldPixel;
-            *oldPixel = *newPixel;
-            *newPixel = temp;
+void transposeTexture(SDL_Surface** txt)
+{
+    SDL_Surface* newTxt = SDL_CreateRGBSurface(0, (*txt)->h, (*txt)->w,
+                                               (*txt)->format->BitsPerPixel,
+                                               rmask, gmask, bmask, amask);
+    for(int i = 0; i < (*txt)->h; ++i) {
+        for(int j = 0; j < (*txt)->w; ++j) {
+            Uint32* oldPixel = getTexturePixel(*txt, i, j);
+            Uint32* newPixel = getTransposedTexturePixel(newTxt, i, j);
+
+            *newPixel = *oldPixel;
         }
     }
 
-    int temp = txt->h;
-    txt->h = txt->w;
-    txt->w = temp;
+    SDL_FreeSurface(*txt);
+    *txt = newTxt;
 }
 
 void transposeTextures(std::vector<SDL_Surface*>& txts)
 {
     for(int i = 0; i < txts.size(); ++i) {
-        transposeTexture(txts.at(i));
+        transposeTexture(&txts.at(i));
     }
 }
 

@@ -23,6 +23,13 @@ void freeTextures() {
     for(auto i = lightmaps.begin(); i != lightmaps.end(); i++) {
         SDL_FreeSurface(*i);
     }
+
+    for(auto i = m_textures.begin(); i != textures.end(); i++) {
+        SDL_FreeSurface(*i);
+    }
+    for(auto i = m_lightmaps.begin(); i != lightmaps.end(); i++) {
+        SDL_FreeSurface(*i);
+    }
 }
 
 
@@ -97,12 +104,12 @@ void renderColumn(int j, SDL_Surface* screen) {
            map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
                 isHorisontal = true;
                 scalingVar = test.x; // Then wall is along horizontal axis
-                if(getFractialPart(test.y) > 0.5) { // If y component greater than a half then it's a north wall
+                if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
                     shouldTextureBeMirrored = true;
                 }
         } else {
                 scalingVar = test.y;
-                if(getFractialPart(test.x) < 0.5) {
+                if(getFractialPart(test.x) < 0.5f) {
                     shouldTextureBeMirrored = true;
                 }
         }
@@ -117,7 +124,6 @@ void renderColumn(int j, SDL_Surface* screen) {
 
 
         if(!shouldTextureBeMirrored) {
-
             // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
             if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size())];
             if(isLightMap) lightmap = lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size())];
@@ -153,8 +159,8 @@ void renderColumn(int j, SDL_Surface* screen) {
                 Uint32* lightmapPixel = NULL;
 
                     if(isTextured) {
-                        texturePixel = getTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
-                                                           (int)(getFractialPart(scalingVar) * (float)texture->w));
+                        texturePixel = getTransposedTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->h / (float)wallSizeOnScreen)),
+                                                       (int)(getFractialPart(scalingVar) * (float)texture->w));
                         pixelColor = *texturePixel;
                     if(textureGradient) {
                         SDL_Color pixelRGB = UintToColor(pixelColor);
@@ -164,12 +170,19 @@ void renderColumn(int j, SDL_Surface* screen) {
                                                  clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.1), 0, 255)));
                     }
                 } else {
-                    pixelColor = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
-                                             clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
-                                             clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
+                    if(   (isHorisontal && shouldTextureBeMirrored)  ||
+                         (!isHorisontal && shouldTextureBeMirrored) ) {
+                          pixelColor = ColorToUint(clamp((int)((wallColor.r * 0.8f) * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
+                                                   clamp((int)((wallColor.g * 0.8f) * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
+                                                   clamp((int)((wallColor.b * 0.8f) * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
+                    } else {
+                        pixelColor = ColorToUint(clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
+                                                 clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
+                                                 clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
+                    }
                 }
                 if(isLightMap) {
-                        lightmapPixel = getTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
+                        lightmapPixel = getTransposedTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->h / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(scalingVar) * (float)lightmap->w));
                         SDL_Color texColor = UintToColor(pixelColor);
                         SDL_Color lightColor = UintToColor(*lightmapPixel);
@@ -177,19 +190,12 @@ void renderColumn(int j, SDL_Surface* screen) {
 
                         pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                     }
-                if(isHorisontal) {
-                    if(isTextured) {
-                        // Doing fast pixel transformation for the texture, so the performance won't suffer
-                        pixelColor = (pixelColor >> 1) & 0x7F7F7F;
-                    } else {
-                        SDL_Color pixelRGB = UintToColor(pixelColor);
-                        int brightnessSum = (pixelRGB.r + pixelRGB.g + pixelRGB.b) / 3;
-                        brightnessSum /= 3;
-                        pixelColor = ColorToUint(clamp(pixelRGB.r - brightnessSum, 0, 255),
-                                                 clamp(pixelRGB.g - brightnessSum, 0, 255),
-                                                 clamp(pixelRGB.b - brightnessSum, 0, 255));
-                    }
+                if(isTextured && ((isHorisontal && shouldTextureBeMirrored)
+                              || (!isHorisontal && shouldTextureBeMirrored)) ) {
+                    // Doing fast pixel transformation for the texture, so the performance won't suffer
+                    pixelColor = (pixelColor >> 1) & 0x7F7F7F;
                 }
+                if(night) pixelColor = (pixelColor >> 1) & 0x7F7F7F;
                 *pixel = pixelColor;
             }
             else
@@ -199,6 +205,7 @@ void renderColumn(int j, SDL_Surface* screen) {
                     pixelColor = ColorToUint(clamp((int)(0  * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200),
                                              clamp((int)(90 * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200),
                                              clamp((int)(30 * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200));
+                    if(night) pixelColor = (pixelColor >> 1) & 0x7F7F7F;
                 } else {
                     if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                         pixelColor = ColorToUint(clamp(rand() % 256, 165, 255),
@@ -256,10 +263,12 @@ int main(int argc, char** argv)
     doLightMapsToAllTextures(textures, lightmaps);
     doLightMapsToAllTextures(m_textures, m_lightmaps);
     setLightMapsTo0();
-    fillUpTheStars();
 
-//    map[7][3].lightmap = 1;
-//    map[7][3].r = 70;
+    transposeTextures(textures);
+    transposeTextures(lightmaps);
+    transposeTextures(m_textures);
+    transposeTextures(m_lightmaps);
+    fillUpTheStars();
 
     if(textures.empty() || lightmaps.empty())
     {
@@ -268,6 +277,7 @@ int main(int argc, char** argv)
     }
 
     char fps[80];
+
     int frameTime = 20;
     SDL_ShowCursor(SDL_DISABLE);
     int count = 0;

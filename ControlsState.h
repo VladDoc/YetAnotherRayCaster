@@ -16,5 +16,6 @@ bool isFullScreen = false;
 bool easterEgg = false;
 bool naiveApproach = false;
 bool vSync = false;
+bool night = false;
 
 #endif // CONTROLSSTATE_H_INCLUDED

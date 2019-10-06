@@ -80,4 +80,6 @@ const Vector2D<int> resolutions[] =
     };
 
 const int resArraySize = 9;
+
+
 #endif // GAMECONSTANTS_H_INCLUDED

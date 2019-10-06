@@ -201,6 +201,9 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
                     vSync = false;
                 }
             }
+            if(event.key.keysym.sym == SDLK_F10) {
+                night = night ? false : true;
+            }
             break;
         }
         case SDL_KEYUP:
