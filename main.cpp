@@ -24,10 +24,10 @@ void freeTextures() {
         SDL_FreeSurface(*i);
     }
 
-    for(auto i = m_textures.begin(); i != textures.end(); i++) {
+    for(auto i = m_textures.begin(); i != m_textures.end(); i++) {
         SDL_FreeSurface(*i);
     }
-    for(auto i = m_lightmaps.begin(); i != lightmaps.end(); i++) {
+    for(auto i = m_lightmaps.begin(); i != m_lightmaps.end(); i++) {
         SDL_FreeSurface(*i);
     }
 }
