@@ -204,6 +204,9 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             if(event.key.keysym.sym == SDLK_F10) {
                 night = night ? false : true;
             }
+            if(event.key.keysym.sym == SDLK_F9) {
+                texturedSky = texturedSky ? false : true;
+            }
             break;
         }
         case SDL_KEYUP:

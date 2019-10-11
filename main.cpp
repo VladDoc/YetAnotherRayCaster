@@ -24,10 +24,10 @@ void freeTextures() {
         SDL_FreeSurface(*i);
     }
 
-    for(auto i = m_textures.begin(); i != textures.end(); i++) {
+    for(auto i = m_textures.begin(); i != m_textures.end(); i++) {
         SDL_FreeSurface(*i);
     }
-    for(auto i = m_lightmaps.begin(); i != lightmaps.end(); i++) {
+    for(auto i = m_lightmaps.begin(); i != m_lightmaps.end(); i++) {
         SDL_FreeSurface(*i);
     }
 }
@@ -93,6 +93,7 @@ void renderColumn(int j, SDL_Surface* screen) {
         floorHeight += horizonLine;
 
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+        int skyTextureIndex = (int)(starsWidth * (bufferRay / (pi * 2)));
         int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
 
         bool shouldTextureBeMirrored = false;
@@ -145,9 +146,19 @@ void renderColumn(int j, SDL_Surface* screen) {
                                              clamp(rand() % 256, 165, 255),
                                              clamp(rand() % 256, 165, 255));
                 } else {
-                    pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 256) / 256), 0, 255),
-                                             clamp((int)(skyColor.g * (float)(i - horizonLine + 256) / 256), 0, 255),
-                                             clamp((int)(skyColor.b * (float)(i - horizonLine + 256) / 256), 0, 255));
+                    if(!texturedSky) {
+                        pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                                 clamp((int)(skyColor.g * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                                 clamp((int)(skyColor.b * (float)(i - horizonLine + 256) / 256), 0, 255));
+                    } else {
+//                        if(bufferRay < pi) {
+                            pixelColor = *getScaledTexturePixel(sky_textures[0], starsHeight, starsWidth,
+                                                            skyTextureIndex, i + (horizonCap - horizonLine));
+//                        } else {
+//                            pixelColor = *getScaledTexturePixel(sky_textures[1], starsHeight, starsWidth / 2,
+//                                                            skyTextureIndex - starsWidth / 2, i + (horizonCap - horizonLine));
+//                        }
+                    }
                 }
                 *pixel = pixelColor;
             }
@@ -171,8 +182,8 @@ void renderColumn(int j, SDL_Surface* screen) {
                                                  clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.1), 0, 255)));
                     }
                 } else {
-                    if(   (isHorisontal && shouldTextureBeMirrored)  ||
-                         (!isHorisontal && shouldTextureBeMirrored) ) {
+                    if(   (!isHorisontal && !shouldTextureBeMirrored)  ||
+                         (isHorisontal && !shouldTextureBeMirrored) ) {
                           pixelColor = ColorToUint(clamp((int)((wallColor.r * 0.8f) * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
                                                    clamp((int)((wallColor.g * 0.8f) * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
                                                    clamp((int)((wallColor.b * 0.8f) * (distanceToAWall * 16) / 32), (int)wallColor.b, 255));
@@ -191,8 +202,8 @@ void renderColumn(int j, SDL_Surface* screen) {
 
                         pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                     }
-                if(isTextured && ((isHorisontal && shouldTextureBeMirrored)
-                              || (!isHorisontal && shouldTextureBeMirrored)) ) {
+                if(isTextured && ((!isHorisontal && !shouldTextureBeMirrored)
+                              || (isHorisontal && !shouldTextureBeMirrored)) ) {
                     // Doing fast pixel transformation for the texture, so the performance won't suffer
                     pixelColor = (pixelColor >> 1) & 0x7F7F7F;
                 }
@@ -213,9 +224,20 @@ void renderColumn(int j, SDL_Surface* screen) {
                                                  clamp(rand() % 256, 165, 255),
                                                  clamp(rand() % 256, 165, 255));
                     } else {
-                        pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 256) / 256), 0, 255),
-                                                 clamp((int)(skyColor.g * (float)(i - horizonLine + 256) / 256), 0, 255),
-                                                 clamp((int)(skyColor.b * (float)(i - horizonLine + 256) / 256), 0, 255));
+                        if(!texturedSky) {
+                            pixelColor = ColorToUint(clamp((int)(skyColor.r * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                                     clamp((int)(skyColor.g * (float)(i - horizonLine + 256) / 256), 0, 255),
+                                                     clamp((int)(skyColor.b * (float)(i - horizonLine + 256) / 256), 0, 255));
+                        } else {
+//                            if(bufferRay < pi) {
+                                pixelColor = *getScaledTexturePixel(sky_textures[0], starsHeight, starsWidth,
+                                                            skyTextureIndex, i + (horizonCap - horizonLine));
+//                            } else {
+//                                pixelColor = *getScaledTexturePixel(sky_textures[1], starsHeight, starsWidth / 2,
+//                                                            skyTextureIndex - starsWidth / 2, i + (horizonCap - horizonLine));
+//                        }
+                    }
+                        //if(night) pixelColor = (pixelColor >> 1) & 0x7F7F7F;
                     }
                 }
                 *pixel = (Uint32)pixelColor;
@@ -258,6 +280,8 @@ int main(int argc, char** argv)
     loadLightmaps(lightmaps);
     loadLightmaps(m_lightmaps);
 
+    loadSkyTextures(sky_textures);
+
     mirrorTextures(m_textures);
     mirrorTextures(m_lightmaps);
 
@@ -265,6 +289,7 @@ int main(int argc, char** argv)
     doLightMapsToAllTextures(m_textures, m_lightmaps);
     setLightMapsTo0();
 
+    transposeTextures(sky_textures);
     transposeTextures(textures);
     transposeTextures(lightmaps);
     transposeTextures(m_textures);

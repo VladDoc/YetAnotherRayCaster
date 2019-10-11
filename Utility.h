@@ -176,6 +176,24 @@ void loadLightmaps(std::vector<SDL_Surface*>& lmp) {
     loadTexture(lmp, "wall2bumpmap.bmp");
 }
 
+Uint32* getScaledTexturePixel(SDL_Surface* txt,
+                              int yourWidth, int yourHeight, int i, int j) {
+    Vector2D<float> coeffs;
+    coeffs.x = (float)txt->w / (float)yourWidth;
+    coeffs.y = (float)txt->h / (float)yourHeight;
+
+    return getTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
+}
+
+Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
+                              int yourWidth, int yourHeight, int i, int j) {
+    Vector2D<float> coeffs;
+    coeffs.x = (float)txt->w / (float)yourWidth;
+    coeffs.y = (float)txt->h / (float)yourHeight;
+
+    return getTransposedTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
+}
+
 void fillUpTheMapToBeBox(MapBlock** aMap)
 {
     for(int i = 0; i < mapWidth; ++i)
@@ -217,10 +235,17 @@ void mirrorTextures(std::vector<SDL_Surface*>& txt) {
     }
 }
 
+void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
+{
+    loadTexture(skyTxt, "sky.bmp");
+//    loadTexture(skyTxt, "sky7.bmp");
+//    mirrorTexture(skyTxt[1]);
+}
+
 void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
 {
     Vector2D<float> coeffs;
-    coeffs.x = (float)lightmap->w / (float)texture->w ;
+    coeffs.x = (float)lightmap->w / (float)texture->w;
     coeffs.y = (float)lightmap->h / (float)texture->h;
     for(int i = 0; i < texture->h; ++i) {
         for(int j = 0; j < texture->w; ++j) {

@@ -11,6 +11,7 @@ bool isLStrafeHeld = false;
 bool isRStrafeHeld = false;
 
 bool shouldStarsBeRendered = true;
+bool texturedSky = true;
 bool isFloorASky = false;
 bool isFullScreen = false;
 bool easterEgg = false;

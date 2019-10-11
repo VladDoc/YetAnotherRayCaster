@@ -21,6 +21,8 @@ std::vector<SDL_Surface*> lightmaps;
 std::vector<SDL_Surface*> m_textures;
 std::vector<SDL_Surface*> m_lightmaps;
 
+std::vector<SDL_Surface*> sky_textures;
+
 SDL_Color defSkyColor;
 SDL_Color skyColor;
 
