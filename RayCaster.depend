@@ -197,7 +197,11 @@
 	"begin_code.h"
 	"close_code.h"
 
+<<<<<<< HEAD
 1570791373 source:d:\progs\cpp\raycaster\main.cpp
+=======
+1570460030 source:d:\progs\cpp\raycaster\main.cpp
+>>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
 	<cstdlib>
 	<iostream>
 	<ctime>

@@ -2,6 +2,7 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
+<<<<<<< HEAD
 	<File name="Vector2D.h" open="1" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="60" topLine="0" />
@@ -10,26 +11,51 @@
 	<File name="ControlsState.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="284" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="GameConstants.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1461" topLine="63" />
-		</Cursor>
-	</File>
-	<File name="player.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="239" topLine="0" />
-		</Cursor>
-	</File>
+=======
 	<File name="Input.h" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="7086" topLine="193" />
+			<Cursor1 position="6977" topLine="190" />
+>>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
 		</Cursor>
 	</File>
 	<File name="MapBlock.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
+<<<<<<< HEAD
+			<Cursor1 position="1461" topLine="63" />
+		</Cursor>
+	</File>
+	<File name="player.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+=======
+			<Cursor1 position="484" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="GameData.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+>>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
+		<Cursor>
+			<Cursor1 position="239" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="doctest.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+<<<<<<< HEAD
+			<Cursor1 position="7086" topLine="193" />
+=======
+			<Cursor1 position="168653" topLine="3763" />
+>>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
+		</Cursor>
+	</File>
+	<File name="Utility.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+<<<<<<< HEAD
 			<Cursor1 position="1369" topLine="55" />
+=======
+			<Cursor1 position="8236" topLine="269" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="666" topLine="304" />
+>>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
 		</Cursor>
 	</File>
 	<File name="GameData.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -37,11 +63,12 @@
 			<Cursor1 position="505" topLine="30" />
 		</Cursor>
 	</File>
-	<File name="doctest.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="ControlsState.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="168653" topLine="3763" />
+			<Cursor1 position="276" topLine="0" />
 		</Cursor>
 	</File>
+<<<<<<< HEAD
 	<File name="Utility.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="6820" topLine="222" />
@@ -50,6 +77,16 @@
 	<File name="main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="10047" topLine="194" />
+=======
+	<File name="player.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="239" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="GameConstants.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1831" topLine="63" />
+>>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
