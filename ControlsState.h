@@ -10,7 +10,7 @@ bool isRightHeld = false;
 bool isLStrafeHeld = false;
 bool isRStrafeHeld = false;
 
-bool shouldStarsBeRendered = true;
+bool shouldStarsBeRendered = false;
 bool texturedSky = true;
 bool isFloorASky = false;
 bool isFullScreen = false;
