@@ -197,11 +197,24 @@
 	"begin_code.h"
 	"close_code.h"
 
-<<<<<<< HEAD
-1570791373 source:d:\progs\cpp\raycaster\main.cpp
-=======
-1570460030 source:d:\progs\cpp\raycaster\main.cpp
->>>>>>> 98aed985e028bea01e5e38585e1e24fea9afd894
+1325742239 D
+
+1571131036 source:d:\progs\cpp\raycaster\main.cpp
+	<cstdlib>
+	<iostream>
+	<ctime>
+	<cmath>
+	<cstdio>
+	<SDL/SDL.h>
+	"MapBlock.h"
+	"ControlsState.h"
+	"Utility.h"
+	"GameData.h"
+	"Input.h"
+	"player.h"
+	"Vector2D.h"
+
+1570460030 ed985e028bea01e5e38585e1e24fea9afd894
 	<cstdlib>
 	<iostream>
 	<ctime>
@@ -223,14 +236,14 @@
 
 1570791621 d:\progs\cpp\raycaster\controlsstate.h
 
-1570791262 d:\progs\cpp\raycaster\utility.h
+1571147516 d:\progs\cpp\raycaster\utility.h
 	<vector>
 	<random>
 	"GameConstants.h"
 	"GameData.h"
 	"Vector2D.h"
 
-1570358008 d:\progs\cpp\raycaster\gameconstants.h
+1570795059 d:\progs\cpp\raycaster\gameconstants.h
 	<limits>
 	"Utility.h"
 	"Vector2D.h"
@@ -244,7 +257,7 @@
 	"ControlsState.h"
 	"player.h"
 
-1567856602 d:\progs\cpp\raycaster\player.h
+1571147632 d:\progs\cpp\raycaster\player.h
 
 1567878476 d:\progs\cpp\raycaster\vector2d.h
 

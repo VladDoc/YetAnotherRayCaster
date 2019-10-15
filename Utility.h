@@ -22,8 +22,8 @@ inline T clamp(T value, T min, T max) {
 // Works only for positive min and max
 inline float clampLooping(float value, float min, float max) {
     int howManyTimesMax = value / max;
-    return value > 0 ? value - (howManyTimesMax * max)
-                     : max - std::abs(value) - (howManyTimesMax * max);
+    return value > 0 ? (value - (howManyTimesMax * max))
+                     : max + (value - (howManyTimesMax * max));
 
 }
 
@@ -78,7 +78,7 @@ void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
     SDL_Surface* surf = SDL_LoadBMP(filename);
     SDL_Surface* texture = SDL_DisplayFormat(surf);
     if(!surf || !texture) {
-        printf("Unable to load textures. Exiting.....");
+        printf("Unable to load textures. Exiting.....\n");
         system("PAUSE");
         exit(-1);
     }
@@ -188,8 +188,8 @@ Uint32* getScaledTexturePixel(SDL_Surface* txt,
 Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
                               int yourWidth, int yourHeight, int i, int j) {
     Vector2D<float> coeffs;
-    coeffs.x = (float)txt->w / (float)yourWidth;
-    coeffs.y = (float)txt->h / (float)yourHeight;
+    coeffs.x = (float)txt->h / (float)yourWidth;
+    coeffs.y = (float)txt->w / (float)yourHeight;
 
     return getTransposedTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
 }

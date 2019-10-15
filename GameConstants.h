@@ -72,6 +72,7 @@ const Vector2D<int> resolutions[] =
         {640,  480},
         {800,  480},
         {800,  600},
+        {1024, 600},
         {1024, 768},
         {1280, 720},
         {1366, 768},
@@ -79,7 +80,12 @@ const Vector2D<int> resolutions[] =
         {1920, 1080}
     };
 
-const int resArraySize = 9;
+const int resArraySize = 10;
 
+const SDL_Color defSkyColor{0, 20, 100, 255};
+SDL_Color skyColor = defSkyColor;
+
+const SDL_Color defFloorColor{0, 90, 30, 255};
+SDL_Color floorColor = defFloorColor;
 
 #endif // GAMECONSTANTS_H_INCLUDED

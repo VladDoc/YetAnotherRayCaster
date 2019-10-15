@@ -167,7 +167,7 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
             if(event.key.keysym.sym == SDLK_c) {
                 horizonLine = 0;
             }
-            if(keyState[SDLK_LALT] && keyState[SDLK_LCTRL] && keyState[SDLK_o]) {
+            if(keyState[SDLK_F6] && keyState[SDLK_F9]) {
                 easterEgg = easterEgg ? false : true;
             }
             if(event.key.keysym.sym == SDLK_F12) {

@@ -23,9 +23,6 @@ std::vector<SDL_Surface*> m_lightmaps;
 
 std::vector<SDL_Surface*> sky_textures;
 
-SDL_Color defSkyColor;
-SDL_Color skyColor;
-
 MapBlock map[mapHeight][mapWidth] =
 {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
