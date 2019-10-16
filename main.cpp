@@ -44,9 +44,9 @@ inline Uint32 getSkyGradientedColor(SDL_Color skyColor, int i, int horLine)
 inline Uint32 getFloorGradientedColor(SDL_Color floorColor, int i, int horLine)
 {
     return ColorToUint(
-                clamp((int)(floorColor.r * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200),
-                clamp((int)(floorColor.g * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200),
-                clamp((int)(floorColor.b * (float)(screenHeight - i + horizonLine / 2 + 192) / 256), 0, 200)
+                clamp((int)(floorColor.r * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
+                clamp((int)(floorColor.g * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
+                clamp((int)(floorColor.b * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200)
             );
 }
 

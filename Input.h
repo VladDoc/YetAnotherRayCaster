@@ -55,7 +55,7 @@ void createRandomColorWallNearby()
     }
 }
 
-void changeResolution(SDL_Surface** screen, Vector2D<int> res)
+void changeResolution(SDL_Surface** screen, const Vector2D<int> res)
 {
     if(isFullScreen) {
         *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
@@ -74,7 +74,7 @@ void changeResolution(SDL_Surface** screen, Vector2D<int> res)
     FOV = calcFOV();
 }
 
-void checkControls(SDL_Event event, SDL_Surface** screen) {
+void checkControls(const SDL_Event event, SDL_Surface** screen) {
     static bool wasSkyColorChangePressed = false;
     static bool wasSkyIsAFloorPressed = false;
     static bool wasFullScreenTogglePressed = false;
@@ -276,7 +276,7 @@ void checkControls(SDL_Event event, SDL_Surface** screen) {
 }
 
 
-void doActions(int frameTime) {
+void doActions(const int frameTime) {
     if(isUpHeld) {
         player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
         if(!map[(int)player.y][(int)player.x].isEmpty() || player.x < 0.0f || player.x > mapWidth)  {

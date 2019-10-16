@@ -77,10 +77,12 @@ const Vector2D<int> resolutions[] =
         {1280, 720},
         {1366, 768},
         {1600, 900},
-        {1920, 1080}
+        {1920, 1080},
+        {2560, 1440},
+        {3840, 2160}
     };
 
-const int resArraySize = 10;
+const int resArraySize = 12;
 
 const SDL_Color defSkyColor{0, 20, 100, 255};
 SDL_Color skyColor = defSkyColor;
