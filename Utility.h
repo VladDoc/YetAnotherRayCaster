@@ -315,7 +315,7 @@ void transposeTexture(SDL_Surface** txt)
 
 void transposeTextures(std::vector<SDL_Surface*>& txts)
 {
-    for(int i = 0; i < txts.size(); ++i) {
+    for(size_t i = 0; i < txts.size(); ++i) {
         transposeTexture(&txts.at(i));
     }
 }

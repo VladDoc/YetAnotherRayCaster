@@ -6,6 +6,7 @@
 class MapBlock
 {
 public:
+    constexpr static const SDL_Color defWallColor{45, 20, 0, 255};
     Uint8 r{};
     Uint8 g{};
     Uint8 b{};
@@ -61,7 +62,15 @@ public:
         return (int)(lightmap)-1;
     }
 
+    inline bool isDefault()
+    {
+        return !(r || g || b || lightmap) && texture == 1;
+    }
+
     SDL_Color getColor(){
+        if(isDefault()) {
+            return defWallColor;
+        }
         SDL_Color retColor;
         retColor.r = r;
         retColor.g = g;

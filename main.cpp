@@ -32,21 +32,21 @@ void freeTextures() {
     }
 }
 
-inline Uint32 getSkyGradientedColor(SDL_Color skyColor, int i, int horLine)
+inline Uint32 getSkyGradientedColor(const SDL_Color color, const int i, const int horLine)
 {
     return ColorToUint(
-                clamp((int)(skyColor.r * (float)(i - horLine + 256) / 256), 0, 255),
-                clamp((int)(skyColor.g * (float)(i - horLine + 256) / 256), 0, 255),
-                clamp((int)(skyColor.b * (float)(i - horLine + 256) / 256), 0, 255)
+                clamp((int)(color.r * (float)(i - horLine + 256) / 256), 0, 255),
+                clamp((int)(color.g * (float)(i - horLine + 256) / 256), 0, 255),
+                clamp((int)(color.b * (float)(i - horLine + 256) / 256), 0, 255)
             );
 }
 
-inline Uint32 getFloorGradientedColor(SDL_Color floorColor, int i, int horLine)
+inline Uint32 getFloorGradientedColor(const SDL_Color color, const int i, const int horLine)
 {
     return ColorToUint(
-                clamp((int)(floorColor.r * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
-                clamp((int)(floorColor.g * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
-                clamp((int)(floorColor.b * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200)
+                clamp((int)(color.r * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
+                clamp((int)(color.g * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
+                clamp((int)(color.b * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200)
             );
 }
 
@@ -59,12 +59,12 @@ inline Uint32 getStarColorPixel()
             );
 }
 
-inline Uint32 fastPixelShadowing(Uint32 pix)
+inline Uint32 fastPixelShadowing(const Uint32 pix)
 {
     return (pix >> 1) & 0x7F7F7F;
 }
 
-inline Uint32 applyWallGradientToPixel(Uint32 pix, float distanceToAWall)
+inline Uint32 applyWallGradientToPixel(const Uint32 pix, const float distanceToAWall)
 {
     SDL_Color pixelRGB = UintToColor(pix);
     return ColorToUint(
@@ -74,26 +74,26 @@ inline Uint32 applyWallGradientToPixel(Uint32 pix, float distanceToAWall)
             );
 }
 
-inline Uint32 getShadowedWallColor(SDL_Color wallColor, float distanceToAWall)
+inline Uint32 getShadowedWallColor(const SDL_Color color, const float distanceToAWall)
 {
     return ColorToUint(
-                clamp((int)((wallColor.r * 0.7f) * (distanceToAWall * 16) / 32), (int)(wallColor.r / 1.2f), 255),
-                clamp((int)((wallColor.g * 0.7f) * (distanceToAWall * 16) / 32), (int)(wallColor.g / 1.2f), 255),
-                clamp((int)((wallColor.b * 0.7f) * (distanceToAWall * 16) / 32), (int)(wallColor.b / 1.2f), 255)
+                clamp((int)((color.r * 0.7f) * (distanceToAWall * 16) / 32), (int)(color.r / 1.2f), 255),
+                clamp((int)((color.g * 0.7f) * (distanceToAWall * 16) / 32), (int)(color.g / 1.2f), 255),
+                clamp((int)((color.b * 0.7f) * (distanceToAWall * 16) / 32), (int)(color.b / 1.2f), 255)
             );
 }
 
-inline Uint32 getGradientedWallColor(SDL_Color wallColor, float distanceToAWall)
+inline Uint32 getGradientedWallColor(const SDL_Color color, const float distanceToAWall)
 {
     return ColorToUint(
-                clamp((int)(wallColor.r * (distanceToAWall * 16) / 32), (int)wallColor.r, 255),
-                clamp((int)(wallColor.g * (distanceToAWall * 16) / 32), (int)wallColor.g, 255),
-                clamp((int)(wallColor.b * (distanceToAWall * 16) / 32), (int)wallColor.b, 255)
+                clamp((int)(color.r * (distanceToAWall * 16) / 32), (int)color.r, 255),
+                clamp((int)(color.g * (distanceToAWall * 16) / 32), (int)color.g, 255),
+                clamp((int)(color.b * (distanceToAWall * 16) / 32), (int)color.b, 255)
             );
 }
 
 
-void renderColumn(int j, SDL_Surface* screen) {
+void renderColumn(const int j, SDL_Surface* screen) {
 
         float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
         float distanceToAWall = 0.0f;
@@ -110,7 +110,7 @@ void renderColumn(int j, SDL_Surface* screen) {
         int wasWallHit = 0;
         SDL_Color wallColor;
 
-        while(!wasWallHit && distanceToAWall < depth) // Ray traversal
+        while(!wasWallHit) // Ray traversal
         {
             distanceToAWall += getDistanceToTheNearestIntersection(test, ray);
 
@@ -121,17 +121,12 @@ void renderColumn(int j, SDL_Surface* screen) {
             if(test.x <= 0.0f || test.x >= mapWidth || test.y <= 0.0f || test.y >= mapHeight)
             {
                 wasWallHit = 1;
-                distanceToAWall = depth;
-                wallColor = UintToColor(defWallColor);
+                distanceToAWall = offMapDepth;
+                wallColor = MapBlock::defWallColor;
            } else {
                 wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty();
 
-
-                if(map[(int)test.y][(int)test.x].texture == 1) {
-                    wallColor = UintToColor(defWallColor);
-                } else {
-                    wallColor = map[(int)test.y][(int)test.x].getColor();
-                }
+                if(wasWallHit) wallColor = map[(int)test.y][(int)test.x].getColor();
             }
         }
 
@@ -218,7 +213,7 @@ void renderColumn(int j, SDL_Surface* screen) {
             else if(i >= ceilingHeight && i < floorHeight)
             {
                 int wallSizeOnScreen = floorHeight - ceilingHeight;
-                Uint32 pixelColor = defWallColor;
+                Uint32 pixelColor = 0;
                 Uint32* texturePixel = NULL;
                 Uint32* lightmapPixel = NULL;
 
@@ -280,11 +275,6 @@ void renderColumn(int j, SDL_Surface* screen) {
 
 int main(int argc, char** argv)
 {
-//    defSkyColor.r = 0;
-//    defSkyColor.g = 10 * 2;
-//    defSkyColor.b = 50 * 2;
-//
-//    skyColor = defSkyColor;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -380,7 +370,7 @@ int main(int argc, char** argv)
     }
 
     freeTextures();
-    SDL_free(screen);
+    SDL_FreeSurface(screen);
     free(stars);
     return 0;
 }

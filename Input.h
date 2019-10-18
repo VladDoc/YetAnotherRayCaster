@@ -21,7 +21,7 @@ void destroyAWallThatPlayerIsFacing()
 
     int wasWallHit = 0;
 
-    while(!wasWallHit && distanceToAWall < depth)
+    while(!wasWallHit)
         {
             distanceToAWall += getDistanceToTheNearestIntersection(test, player.angle);
 

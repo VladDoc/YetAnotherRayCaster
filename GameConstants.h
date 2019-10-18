@@ -20,7 +20,7 @@ const int mapHeight = 16;
 const int mapWidth = 16;
 
 const float pi = 3.14159265358979323846f;
-const float depth =  std::numeric_limits<float>::infinity();
+const float offMapDepth =  std::numeric_limits<float>::infinity();
 
 const float defWalkingSpeed = 0.2f;
 const float rotatingSpeed = 0.1f;
@@ -63,8 +63,6 @@ int calcStarsHeight() {
 
 int starsWidth = calcStarsWidth();
 int starsHeight = calcStarsHeight();
-
-Uint32 defWallColor = ColorToUint(45, 20, 0);
 
 const Vector2D<int> resolutions[] =
     {
