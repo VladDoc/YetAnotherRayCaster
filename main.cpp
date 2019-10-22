@@ -92,6 +92,21 @@ inline Uint32 getGradientedWallColor(const SDL_Color color, const float distance
             );
 }
 
+enum class SideOfAWall {
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST
+};
+
+
+SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
+{
+    if(!isMirrored && isHorisontal) return SideOfAWall::NORTH;
+    if(!isMirrored && !isHorisontal) return SideOfAWall::WEST;
+    if(isMirrored && isHorisontal) return SideOfAWall::SOUTH;
+    if(isMirrored && !isHorisontal) return SideOfAWall::EAST;
+}
 
 void renderColumn(const int j, SDL_Surface* screen) {
 
@@ -226,8 +241,8 @@ void renderColumn(const int j, SDL_Surface* screen) {
                         pixelColor = applyWallGradientToPixel(pixelColor, distanceToAWall);
                     }
                 } else {
-                    if(   (!isHorisontal && !shouldTextureBeMirrored)  ||
-                           (isHorisontal && !shouldTextureBeMirrored) ) {
+                    if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
+                       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH ) {
                           pixelColor = getShadowedWallColor(wallColor, distanceToAWall);
                     } else {
                         pixelColor = getGradientedWallColor(wallColor, distanceToAWall);
@@ -242,8 +257,9 @@ void renderColumn(const int j, SDL_Surface* screen) {
 
                         pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                     }
-                if(isTextured && ((!isHorisontal && !shouldTextureBeMirrored)
-                              || (isHorisontal && !shouldTextureBeMirrored)) ) {
+                if( isTextured &&
+                   (whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
+                    whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH)   ) {
                     // Doing fast pixel transformation for the texture, so the performance won't suffer
                     pixelColor = fastPixelShadowing(pixelColor);
                 }
