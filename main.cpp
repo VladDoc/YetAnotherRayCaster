@@ -102,10 +102,10 @@ enum class SideOfAWall {
 
 SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
 {
-    if(!isMirrored && isHorisontal) return SideOfAWall::NORTH;
-    if(!isMirrored && !isHorisontal) return SideOfAWall::WEST;
-    if(isMirrored && isHorisontal) return SideOfAWall::SOUTH;
-    if(isMirrored && !isHorisontal) return SideOfAWall::EAST;
+    if(!isMirrored &&  isHorisontal)    return SideOfAWall::NORTH;
+    if(!isMirrored && !isHorisontal)    return SideOfAWall::WEST;
+    if( isMirrored &&  isHorisontal)    return SideOfAWall::SOUTH;
+    if( isMirrored && !isHorisontal)    return SideOfAWall::EAST;
 }
 
 void renderColumn(const int j, SDL_Surface* screen) {
@@ -213,9 +213,11 @@ void renderColumn(const int j, SDL_Surface* screen) {
             {
                 Uint32 pixelColor;
 
+                // If star exists in the stars map for the current location set white flickering pixel
                 if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                     pixelColor = getStarColorPixel();
                 } else {
+                    // Do gradiented color sky or retrieve pixel out of sky box
                     if(!texturedSky) {
                         pixelColor = getSkyGradientedColor(skyColor, i, horizonLine);
                     } else {
@@ -232,23 +234,39 @@ void renderColumn(const int j, SDL_Surface* screen) {
                 Uint32* texturePixel = NULL;
                 Uint32* lightmapPixel = NULL;
 
-                    if(isTextured) {
+                // Textured wall routine
+                if(isTextured) {
                         // Swaped w and h because the texture is transposed. Same with lightmaps.
                         texturePixel = getTransposedTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->w / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(scalingVar) * (float)texture->h));
                         pixelColor = *texturePixel;
+
                     if(textureGradient) {
                         pixelColor = applyWallGradientToPixel(pixelColor, distanceToAWall);
                     }
+
+                    // Darkens walls for an illusion of directed light
+                    if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST   ||
+                       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    ) {
+                        // Doing fast pixel transformation for the texture, so the performance won't suffer
+                            pixelColor = fastPixelShadowing(pixelColor);
+                    }
+
+                    // If night mode enabled darken pixel even more
+                    if(night) pixelColor = fastPixelShadowing(pixelColor);
+
                 } else {
+                    // Non textured wall routine
                     if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
-                       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH ) {
+                       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    ) {
                           pixelColor = getShadowedWallColor(wallColor, distanceToAWall);
                     } else {
                         pixelColor = getGradientedWallColor(wallColor, distanceToAWall);
                     }
                 }
                 if(isLightMap) {
+                        // If current wall is lightmapped(on runtime) then transform pixel accordingly.
+                        // Very slow so it's never used.
                         lightmapPixel = getTransposedTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->w / (float)wallSizeOnScreen)),
                                                         (int)(getFractialPart(scalingVar) * (float)lightmap->h));
                         SDL_Color texColor = UintToColor(pixelColor);
@@ -257,13 +275,6 @@ void renderColumn(const int j, SDL_Surface* screen) {
 
                         pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                     }
-                if( isTextured &&
-                   (whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
-                    whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH)   ) {
-                    // Doing fast pixel transformation for the texture, so the performance won't suffer
-                    pixelColor = fastPixelShadowing(pixelColor);
-                }
-                if(night) pixelColor = fastPixelShadowing(pixelColor);
                 *pixel = pixelColor;
             }
             else
