@@ -252,9 +252,6 @@ void renderColumn(const int j, SDL_Surface* screen) {
                             pixelColor = fastPixelShadowing(pixelColor);
                     }
 
-                    // If night mode enabled darken pixel even more
-                    if(night) pixelColor = fastPixelShadowing(pixelColor);
-
                 } else {
                     // Non textured wall routine
                     if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
@@ -275,6 +272,9 @@ void renderColumn(const int j, SDL_Surface* screen) {
 
                         pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                     }
+
+                 // If night mode enabled darken pixel even more
+                if(night) pixelColor = fastPixelShadowing(pixelColor);
                 *pixel = pixelColor;
             }
             else
