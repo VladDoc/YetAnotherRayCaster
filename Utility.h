@@ -27,6 +27,12 @@ inline float clampLooping(float value, float min, float max) {
 
 }
 
+template<typename T>
+bool withinRange(T arg, T min, T max)
+{
+    return arg >= min && arg < max;
+}
+
 Uint32 ColorToUint(int R, int G, int B)
 {
 	return (Uint32)((R << 16) + (G << 8) + (B << 0));
@@ -117,28 +123,28 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
 
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
 
-        Vector2D<float> distances;
+        Vector2D<float> distance;
         Vector2D<float> delta;
         Vector2D<float> scaleCoeffs;
 
 
         if(bufferRay <= deg90) { // North-east
-            delta.x = 1.0f - getFractialPart(test.x);
+            delta.x = 1.0f - getFractialPart(test.x - blockBitSize);
             scaleCoeffs.x = sinf(ray);
-            delta.y = 1.0f - getFractialPart(test.y);
+            delta.y = 1.0f - getFractialPart(test.y - blockBitSize);
             scaleCoeffs.y = cosf(ray);
         } else if(bufferRay <= deg180) { // South-east
             delta.x = 1.0f - getFractialPart(test.x);
             scaleCoeffs.x = sinf(ray);
-            delta.y = getFractialPart(test.y);
+            delta.y = getFractialPart(test.y + blockBitSize);
             scaleCoeffs.y = cosf(ray + pi);
         } else if(bufferRay <= deg270) { // South-west
-            delta.x = getFractialPart(test.x);
+            delta.x = getFractialPart(test.x + blockBitSize);
             scaleCoeffs.x = sinf(ray + pi);
-            delta.y = getFractialPart(test.y);
+            delta.y = getFractialPart(test.y + blockBitSize);
             scaleCoeffs.y = cosf(ray + pi);
         } else { // North-west
-            delta.x = getFractialPart(test.x);
+            delta.x = getFractialPart(test.x + blockBitSize);
             scaleCoeffs.x = sinf(ray + pi);
             delta.y = 1.0f - getFractialPart(test.y - blockBitSize); // without constant ray overshoots walls by x axis
             scaleCoeffs.y = cosf(ray);
@@ -152,11 +158,11 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
             delta.y = blockBitSize;
         }
 
-        distances.x = delta.x / clamp(scaleCoeffs.x, std::numeric_limits<float>::min(), 1.0f);
+        distance.x = delta.x / clamp(scaleCoeffs.x, std::numeric_limits<float>::min(), 1.0f);
 
-        distances.y = delta.y / clamp(scaleCoeffs.y, std::numeric_limits<float>::min(), 1.0f);
+        distance.y = delta.y / clamp(scaleCoeffs.y, std::numeric_limits<float>::min(), 1.0f);
 
-        return distances.x < distances.y ? distances.x : distances.y;
+        return distance.x < distance.y ? distance.x : distance.y;
 
     } else {
         return blockBitSize;

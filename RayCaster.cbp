@@ -51,6 +51,7 @@
 		<Unit filename="Vector2D.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="player.h" />
+		<Unit filename="rendering.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

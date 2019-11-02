@@ -72,6 +72,7 @@ void changeResolution(SDL_Surface** screen, const Vector2D<int> res)
 
     fillUpTheStars();
     FOV = calcFOV();
+    allocateScreenSizeSensitiveData();
 }
 
 void checkControls(const SDL_Event event, SDL_Surface** screen) {

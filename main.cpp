@@ -4,6 +4,7 @@
 #include <ctime>
 #include <cmath>
 #include <cstdio>
+#include <thread>
 
 #include <SDL/SDL.h>
 
@@ -14,7 +15,10 @@
 #include "Input.h"
 #include "player.h"
 #include "Vector2D.h"
+#include "rendering.h"
 
+thread_local std::mt19937 random;
+thread_local std::uniform_int_distribution<int> dist{0, 255};
 
 void freeTextures() {
     for(auto i = textures.begin(); i != textures.end(); i++) {
@@ -50,13 +54,14 @@ inline Uint32 getFloorGradientedColor(const SDL_Color color, const int i, const 
             );
 }
 
-inline Uint32 getStarColorPixel()
+Uint32 getStarColorPixel()
 {
+
     return ColorToUint(
-                clamp(rand() % 256, 165, 255),
-                clamp(rand() % 256, 165, 255),
-                clamp(rand() % 256, 165, 255)
-            );
+                clamp(dist(random), 165, 255),
+                clamp(dist(random), 165, 255),
+                clamp(dist(random), 165, 255)
+    );
 }
 
 inline Uint32 fastPixelShadowing(const Uint32 pix)
@@ -108,45 +113,15 @@ SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
     if( isMirrored && !isHorisontal)    return SideOfAWall::EAST;
 }
 
-void renderColumn(const int j, SDL_Surface* screen) {
-
-        float ray = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
-        float distanceToAWall = 0.0f;
-
-        Vector2D<float> eye;
-
-        eye.x = sinf(ray);
-        eye.y = cosf(ray);
-
-        Vector2D<float> test;
-        test.x = player.x;
-        test.y = player.y;
-
-        int wasWallHit = 0;
+void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& test, float distanceToAWall)
+{
         SDL_Color wallColor;
-
-        while(!wasWallHit) // Ray traversal
-        {
-            distanceToAWall += getDistanceToTheNearestIntersection(test, ray);
-
-
-            test.x = player.x + eye.x * distanceToAWall;
-            test.y = player.y + eye.y * distanceToAWall;
-
-            if(test.x <= 0.0f || test.x >= mapWidth || test.y <= 0.0f || test.y >= mapHeight)
-            {
-                wasWallHit = 1;
-                distanceToAWall = offMapDepth;
-                wallColor = MapBlock::defWallColor;
-           } else {
-                wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty();
-
-                if(wasWallHit) wallColor = map[(int)test.y][(int)test.x].getColor();
-            }
+        if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
+           withinRange((float)test.y, 0.0f, (float)mapHeight)) {
+                wallColor = map[(int)test.y][(int)test.x].getColor();
+        } else {
+            wallColor = MapBlock::defWallColor;
         }
-
-        // Constant gives slightly better fish-eye correction. Without it walls are a little bit more 'rounded'
-        distanceToAWall *= cosf(ray - player.angle - (FOV / (screenWidth * 8)));
 
         int ceilingHeight = 0;
 
@@ -300,6 +275,24 @@ void renderColumn(const int j, SDL_Surface* screen) {
         }
 }
 
+void calculateDistances(float* inRays, int from, int to)
+{
+    for(int j = from; j < to; ++j)
+    {
+        rayTraversal(inRays[j], distances, rayPositions, j);
+    }
+}
+
+void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int threadId)
+{
+    random.seed(threadId);
+    for(int j = from; j < to; ++j)
+    {
+        renderColumn(inRays[j], j, screen, rayPositions[j], distances[j]);
+    }
+}
+
+
 int main(int argc, char** argv)
 {
 
@@ -358,8 +351,11 @@ int main(int argc, char** argv)
     SDL_ShowCursor(SDL_DISABLE);
     int count = 0;
 
+    allocateScreenSizeSensitiveData();
+
     while (!done)
     {
+
         int start = SDL_GetTicks();
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
@@ -372,7 +368,36 @@ int main(int argc, char** argv)
 
         for(int j = 0; j < screenWidth; ++j)
         {
-            renderColumn(j, screen);
+           rays[j] = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
+        }
+
+
+        size_t numThreads = std::thread::hardware_concurrency();
+
+        std::thread** distanceThreads = new std::thread*[numThreads];
+
+        for(size_t i = 0; i < numThreads; ++i) {
+            distanceThreads[i] =
+                new std::thread(calculateDistances, rays,
+                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads));
+        }
+
+        for(size_t i = 0; i < numThreads; ++i) {
+            distanceThreads[i]->join();
+            delete distanceThreads[i];
+        }
+
+        std::thread** renderThreads = new std::thread*[numThreads];
+
+        for(size_t i = 0; i < numThreads; ++i) {
+            renderThreads[i] =
+                    new std::thread(renderColumns, screen, rays,
+                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads), rand());
+        }
+
+        for(size_t i = 0; i < numThreads; ++i) {
+            renderThreads[i]->join();
+            delete renderThreads[i];
         }
 
         int end = SDL_GetTicks();
@@ -398,6 +423,8 @@ int main(int argc, char** argv)
 
     freeTextures();
     SDL_FreeSurface(screen);
-    free(stars);
+
+    freeScreenSizeSensitiveData();
+
     return 0;
 }

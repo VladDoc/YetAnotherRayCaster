@@ -46,4 +46,23 @@ MapBlock map[mapHeight][mapWidth] =
 
 bool* stars;
 
+float* distances;
+float* rays;
+Vector2D<float>* rayPositions;
+
+void allocateScreenSizeSensitiveData()
+{
+    distances = (float*) realloc(distances, sizeof(float) * screenWidth);
+    rayPositions = (Vector2D<float>*) realloc(rayPositions, sizeof(Vector2D<float>) * screenWidth);
+    rays =  (float*) realloc(rays, sizeof(float) * screenWidth);
+}
+
+void freeScreenSizeSensitiveData()
+{
+    free(distances);
+    free(rayPositions);
+    free(rays);
+    free(stars);
+}
+
 #endif // GAMEDATA_H_INCLUDED

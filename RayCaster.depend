@@ -7,7 +7,7 @@
 	<SDL/SDL.h>
 	<stdio.h>
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl.h
 	"SDL_main.h"
 	"SDL_stdinc.h"
 	"SDL_audio.h"
@@ -26,14 +26,14 @@
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_main.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_main.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_stdinc.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_stdinc.h
 	"SDL_config.h"
 	<sys/types.h>
 	<stdio.h>
@@ -59,7 +59,7 @@
 	<stdlib.h>
 	"close_code.h"
 
-1326114587 d:\sdl-1.2.15\include\sdl\sdl_config.h
+1326110987 d:\sdl-1.2.15\include\sdl\sdl_config.h
 	"SDL_platform.h"
 	"SDL_config_dreamcast.h"
 	"SDL_config_macos.h"
@@ -69,16 +69,16 @@
 	"SDL_config_os2.h"
 	"SDL_config_minimal.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_platform.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_platform.h
 
-1326114594 d:\sdl-1.2.15\include\sdl\sdl_config_win32.h
+1326110994 d:\sdl-1.2.15\include\sdl\sdl_config_win32.h
 	"SDL_platform.h"
 
-1326114600 d:\sdl-1.2.15\include\sdl\begin_code.h
+1326111000 d:\sdl-1.2.15\include\sdl\begin_code.h
 
-1325742239 d:\sdl-1.2.15\include\sdl\close_code.h
+1325738639 d:\sdl-1.2.15\include\sdl\close_code.h
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_audio.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_audio.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_endian.h"
@@ -88,24 +88,24 @@
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_error.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_error.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_endian.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_endian.h
 	"SDL_stdinc.h"
 	<endian.h>
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_mutex.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_mutex.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_thread.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_thread.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_mutex.h"
@@ -113,24 +113,24 @@
 	<process.h>
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_rwops.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_rwops.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_cdrom.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_cdrom.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_cpuinfo.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_cpuinfo.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_events.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_events.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_active.h"
@@ -141,70 +141,71 @@
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_active.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_active.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_keyboard.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_keyboard.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_keysym.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_keysym.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_keysym.h
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_mouse.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_mouse.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_video.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_video.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_rwops.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_joystick.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_joystick.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_quit.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_quit.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_loadso.h
-	"SDL_stdinc.h"
-	"SDL_error.h"
-	"begin_code.h"
-	"close_code.h"
-
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_timer.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_loadso.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1325742239 d:\sdl-1.2.15\include\sdl\sdl_version.h
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_timer.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1325738639 d:\sdl-1.2.15\include\sdl\sdl_version.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
 1325742239 D
 
-1571840261 source:d:\progs\cpp\raycaster\main.cpp
+1572697857 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
 	<cmath>
 	<cstdio>
+	<thread>
 	<SDL/SDL.h>
 	"MapBlock.h"
 	"ControlsState.h"
@@ -213,6 +214,7 @@
 	"Input.h"
 	"player.h"
 	"Vector2D.h"
+	"rendering.h"
 
 1570460030 ed985e028bea01e5e38585e1e24fea9afd894
 	<cstdlib>
@@ -232,34 +234,34 @@
 1325742239 d:\sdl-1.2.15\include\sdl\sdl_types.h
 	"SDL_stdinc.h"
 
-1571395738 d:\progs\cpp\raycaster\mapblock.h
+1571392138 d:\progs\cpp\raycaster\mapblock.h
 
-1570791621 d:\progs\cpp\raycaster\controlsstate.h
+1572698877 d:\progs\cpp\raycaster\controlsstate.h
 
-1571391975 d:\progs\cpp\raycaster\utility.h
+1572701219 d:\progs\cpp\raycaster\utility.h
 	<vector>
 	<random>
 	"GameConstants.h"
 	"GameData.h"
 	"Vector2D.h"
 
-1571395867 d:\progs\cpp\raycaster\gameconstants.h
+1572685301 d:\progs\cpp\raycaster\gameconstants.h
 	<limits>
 	"Utility.h"
 	"Vector2D.h"
 
-1571148581 d:\progs\cpp\raycaster\gamedata.h
+1572689296 d:\progs\cpp\raycaster\gamedata.h
 	<vector>
 	"GameConstants.h"
 	"MapBlock.h"
 
-1571395914 d:\progs\cpp\raycaster\input.h
+1572698908 d:\progs\cpp\raycaster\input.h
 	"ControlsState.h"
 	"player.h"
 
-1571147665 d:\progs\cpp\raycaster\player.h
+1571144065 d:\progs\cpp\raycaster\player.h
 
-1571161152 d:\progs\cpp\raycaster\vector2d.h
+1571157552 d:\progs\cpp\raycaster\vector2d.h
 
 1568533855 d:\progs\cpp\raycaster\doctest.h
 	<iosfwd>
@@ -353,4 +355,12 @@
 	"player.h"
 
 1567856602 f:\raycaster\player.h
+
+1570788021 source:d:\progs\cpp\raycaster\controlsstate.cpp
+
+1572701086 d:\progs\cpp\raycaster\rendering.h
+	"Utility.h"
+
+1572685016 d:\progs\cpp\raycaster\raytraversalthread.h
+	"rendering.h"
 
