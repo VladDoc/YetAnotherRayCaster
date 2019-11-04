@@ -199,7 +199,7 @@
 
 1325742239 D
 
-1572697857 source:d:\progs\cpp\raycaster\main.cpp
+1572797090 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
@@ -236,9 +236,9 @@
 
 1571392138 d:\progs\cpp\raycaster\mapblock.h
 
-1572698877 d:\progs\cpp\raycaster\controlsstate.h
+1572708250 d:\progs\cpp\raycaster\controlsstate.h
 
-1572701219 d:\progs\cpp\raycaster\utility.h
+1572796899 d:\progs\cpp\raycaster\utility.h
 	<vector>
 	<random>
 	"GameConstants.h"
@@ -255,9 +255,10 @@
 	"GameConstants.h"
 	"MapBlock.h"
 
-1572698908 d:\progs\cpp\raycaster\input.h
+1572797283 d:\progs\cpp\raycaster\input.h
 	"ControlsState.h"
 	"player.h"
+	"rendering.h"
 
 1571144065 d:\progs\cpp\raycaster\player.h
 
@@ -358,7 +359,7 @@
 
 1570788021 source:d:\progs\cpp\raycaster\controlsstate.cpp
 
-1572701086 d:\progs\cpp\raycaster\rendering.h
+1572797162 d:\progs\cpp\raycaster\rendering.h
 	"Utility.h"
 
 1572685016 d:\progs\cpp\raycaster\raytraversalthread.h

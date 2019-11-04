@@ -5,38 +5,19 @@
 
 #include "ControlsState.h"
 #include "player.h"
+#include "rendering.h"
 
 void destroyAWallThatPlayerIsFacing()
 {
     float distanceToAWall = 0.0f;
 
-    Vector2D<float> eye;
-
-    eye.x = sinf(player.angle);
-    eye.y = cosf(player.angle);
-
     Vector2D<float> test;
     test.x = player.x;
     test.y = player.y;
 
-    int wasWallHit = 0;
+    rayTraversal(player.angle, &distanceToAWall, &test);
 
-    while(!wasWallHit)
-        {
-            distanceToAWall += getDistanceToTheNearestIntersection(test, player.angle);
-
-
-            test.x = player.x + eye.x * distanceToAWall;
-            test.y = player.y + eye.y * distanceToAWall;
-
-            if(test.x < 0 || test.x >= mapWidth || test.y < 0 || test.y >= mapHeight)
-            {
-                return;
-            } else {
-                wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty();
-            }
-        }
-      map[(int)test.y][(int)test.x].setEmpty();
+    map[(int)test.y][(int)test.x].setEmpty();
 }
 
 void createRandomColorWallNearby()
@@ -207,6 +188,9 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
             }
             if(event.key.keysym.sym == SDLK_F9) {
                 texturedSky = texturedSky ? false : true;
+            }
+            if(event.key.keysym.sym == SDLK_F6) {
+                multithreaded = multithreaded ? false : true;
             }
             break;
         }

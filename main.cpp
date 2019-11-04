@@ -372,7 +372,9 @@ int main(int argc, char** argv)
         }
 
 
-        size_t numThreads = std::thread::hardware_concurrency();
+        size_t numThreads;
+        if(multithreaded) numThreads = std::thread::hardware_concurrency();
+        else numThreads = 1;
 
         std::thread** distanceThreads = new std::thread*[numThreads];
 

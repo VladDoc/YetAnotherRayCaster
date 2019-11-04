@@ -43,10 +43,7 @@ void rayTraversal(float ray, float* distArray, Vector2D<float>* rayPosArray, int
         distanceToAWall *= cosf(ray - player.angle - (FOV / (screenWidth * 8)));
 
         if(distArray) distArray[j] = distanceToAWall;
-        if(rayPosArray) {
-            rayPosArray[j].x = test.x;
-            rayPosArray[j].y = test.y;
-        }
+        if(rayPosArray) rayPosArray[j] = test;
 }
 
 

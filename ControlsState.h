@@ -18,5 +18,5 @@ bool easterEgg = false;
 bool naiveApproach = false;
 bool vSync = false;
 bool night = false;
-
+bool multithreaded = true;
 #endif // CONTROLSSTATE_H_INCLUDED
