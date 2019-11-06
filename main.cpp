@@ -115,6 +115,8 @@ SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
 
 void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& test, float distanceToAWall)
 {
+
+
         SDL_Color wallColor;
         if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
            withinRange((float)test.y, 0.0f, (float)mapHeight)) {
@@ -122,6 +124,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
         } else {
             wallColor = MapBlock::defWallColor;
         }
+
 
         int ceilingHeight = 0;
 
@@ -173,11 +176,11 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
 
         if(!shouldTextureBeMirrored) {
             // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
-            if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size())];
-            if(isLightMap) lightmap = lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size())];
+            if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size()-1)];
+            if(isLightMap) lightmap = lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size()-1)];
         } else {
-            if(isTextured) texture = m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size())];
-            if(isLightMap) lightmap = m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size())];
+            if(isTextured) texture = m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size()-1)];
+            if(isLightMap) lightmap = m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size()-1)];
         }
 
 

@@ -17,7 +17,10 @@ void destroyAWallThatPlayerIsFacing()
 
     rayTraversal(player.angle, &distanceToAWall, &test);
 
-    map[(int)test.y][(int)test.x].setEmpty();
+    if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
+       withinRange((float)test.y, 0.0f, (float)mapHeight)) {
+            map[(int)test.y][(int)test.x].setEmpty();
+    }
 }
 
 void createRandomColorWallNearby()
