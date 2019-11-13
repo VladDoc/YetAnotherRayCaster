@@ -113,6 +113,17 @@ SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
     if( isMirrored && !isHorisontal)    return SideOfAWall::EAST;
 }
 
+Uint32 fogColor = ColorToUint(127, 127, 127);
+Uint32 nightFogColor = ColorToUint(0, 0, 0);
+
+inline Uint32 blend(Uint32 color1, Uint32 color2, Uint8 alpha) {
+	Uint32 rb = color1 & 0xff00ff;
+	Uint32 g  = color1 & 0x00ff00;
+	rb += ((color2 & 0xff00ff) - rb) * alpha >> 8;
+	g  += ((color2 & 0x00ff00) -  g) * alpha >> 8;
+	return (rb & 0xff00ff) | (g & 0xff00);
+}
+
 void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& test, float distanceToAWall)
 {
 
@@ -187,10 +198,9 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
         for(int i = 0; i < screenHeight; ++i)
         {
             Uint32* pixel = getTexturePixel(screen, i, j);
+            Uint32 pixelColor;
             if(i < ceilingHeight)
             {
-                Uint32 pixelColor;
-
                 // If star exists in the stars map for the current location set white flickering pixel
                 if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                     pixelColor = getStarColorPixel();
@@ -202,13 +212,13 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                             pixelColor = *getTransposedScaledTexturePixel(sky_textures[0], starsWidth, starsHeight,
                                                             i + (horizonCap - horizonLine), skyTextureIndex);
                     }
+                    pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
+                                        (i + (horizonCap - horizonLine)) / (starsHeight / 256));
                 }
-                *pixel = pixelColor;
             }
             else if(i >= ceilingHeight && i < floorHeight)
             {
                 int wallSizeOnScreen = floorHeight - ceilingHeight;
-                Uint32 pixelColor = 0;
                 Uint32* texturePixel = NULL;
                 Uint32* lightmapPixel = NULL;
 
@@ -252,15 +262,19 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                     }
 
                  // If night mode enabled darken pixel even more
-                if(night) pixelColor = fastPixelShadowing(pixelColor);
-                *pixel = pixelColor;
+                if(night) {
+                        pixelColor = fastPixelShadowing(fastPixelShadowing(pixelColor));
+                }
+                pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
+                                    (Uint8)clamp(distanceToAWall * 12, 0.0f, 255.0f));
             }
             else
             {
-                Uint32 pixelColor;
                 if(!isFloorASky) {
                     pixelColor = getFloorGradientedColor(floorColor, i, horizonLine);
                     if(night) pixelColor = fastPixelShadowing(pixelColor);
+                    pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
+                                       (starsHeight - (i + (horizonCap - horizonLine)))  / (starsHeight / 256));
                 } else {
                     if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                         pixelColor = getStarColorPixel();
@@ -271,10 +285,12 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                             pixelColor = *getTransposedScaledTexturePixel(sky_textures[0], starsWidth, starsHeight,
                                                             i + (horizonCap - horizonLine), skyTextureIndex);
                         }
+                        pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
+                                (starsHeight - (i + (horizonCap - horizonLine)))  / (starsHeight / 256));
                     }
                 }
-                *pixel = (Uint32)pixelColor;
             }
+            *pixel = pixelColor;
         }
 }
 
