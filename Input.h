@@ -195,6 +195,12 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
             if(event.key.keysym.sym == SDLK_F6) {
                 multithreaded = multithreaded ? false : true;
             }
+            if(event.key.keysym.sym == SDLK_F7) {
+                fog = fog ? false : true;
+            }
+            if(event.key.keysym.sym == SDLK_F8) {
+                coloredLight = coloredLight ? false : true;
+            }
             break;
         }
         case SDL_KEYUP:

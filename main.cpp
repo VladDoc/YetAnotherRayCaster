@@ -113,9 +113,6 @@ SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
     if( isMirrored && !isHorisontal)    return SideOfAWall::EAST;
 }
 
-Uint32 fogColor = ColorToUint(127, 127, 127);
-Uint32 nightFogColor = ColorToUint(0, 0, 0);
-
 inline Uint32 blend(Uint32 color1, Uint32 color2, Uint8 alpha) {
 	Uint32 rb = color1 & 0xff00ff;
 	Uint32 g  = color1 & 0x00ff00;
@@ -194,6 +191,21 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
             if(isLightMap) lightmap = m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size()-1)];
         }
 
+        Uint32 skyLightColor;
+        Uint32 fogColor;
+
+        if(texturedSky) {
+            skyLightColor = *getTransposedScaledTexturePixel(sky_textures[0],
+                             starsWidth, starsHeight, starsHeight / 4, starsWidth / 2);
+        } else {
+            skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
+        }
+
+        if(night) {
+            fogColor = nightFogColor;
+        } else {
+            fogColor = dayFogColor;
+        }
 
         for(int i = 0; i < screenHeight; ++i)
         {
@@ -212,8 +224,10 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                             pixelColor = *getTransposedScaledTexturePixel(sky_textures[0], starsWidth, starsHeight,
                                                             i + (horizonCap - horizonLine), skyTextureIndex);
                     }
-                    pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
-                                        (i + (horizonCap - horizonLine)) / (starsHeight / 256));
+                    if(fog) {
+                        pixelColor = blend(pixelColor, fogColor,
+                                     clamp((i + (horizonCap - horizonLine))  /  2 / (starsHeight / 2 / 256), 0, 255));
+                    }
                 }
             }
             else if(i >= ceilingHeight && i < floorHeight)
@@ -265,16 +279,23 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                 if(night) {
                         pixelColor = fastPixelShadowing(fastPixelShadowing(pixelColor));
                 }
-                pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
-                                    (Uint8)clamp(distanceToAWall * 12, 0.0f, 255.0f));
+
+                if(fog) {
+                    pixelColor = blend(pixelColor, fogColor, clamp((Uint8)(distanceToAWall * 12), (Uint8)0, (Uint8)255));
+                }
+
+                if(coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
             }
             else
             {
                 if(!isFloorASky) {
                     pixelColor = getFloorGradientedColor(floorColor, i, horizonLine);
                     if(night) pixelColor = fastPixelShadowing(pixelColor);
-                    pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
-                                       (starsHeight - (i + (horizonCap - horizonLine)))  / (starsHeight / 256));
+                    if(fog) {
+                        pixelColor = blend(pixelColor, fogColor,
+                               clamp((starsHeight - (i + (horizonCap - horizonLine)))  / (starsHeight / 2 / 256), 0, 255));
+                    }
+                    if(coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
                 } else {
                     if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
                         pixelColor = getStarColorPixel();
@@ -285,8 +306,10 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                             pixelColor = *getTransposedScaledTexturePixel(sky_textures[0], starsWidth, starsHeight,
                                                             i + (horizonCap - horizonLine), skyTextureIndex);
                         }
-                        pixelColor = blend(pixelColor, night ? nightFogColor : fogColor,
-                                (starsHeight - (i + (horizonCap - horizonLine)))  / (starsHeight / 256));
+                        if(fog) {
+                            pixelColor = blend(pixelColor, fogColor,
+                                        clamp((starsHeight - (i + (horizonCap - horizonLine)))  / 2 / (starsHeight / 2 / 256), 0, 255));
+                        }
                     }
                 }
             }

@@ -19,4 +19,8 @@ bool naiveApproach = false;
 bool vSync = false;
 bool night = false;
 bool multithreaded = true;
+
+bool fog = false;
+bool coloredLight = true;
+
 #endif // CONTROLSSTATE_H_INCLUDED

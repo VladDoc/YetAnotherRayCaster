@@ -88,4 +88,7 @@ SDL_Color skyColor = defSkyColor;
 const SDL_Color defFloorColor{0, 90, 30, 255};
 SDL_Color floorColor = defFloorColor;
 
+Uint32 dayFogColor = ColorToUint(127, 127, 127);
+Uint32 nightFogColor = ColorToUint(0, 0, 0);
+
 #endif // GAMECONSTANTS_H_INCLUDED
