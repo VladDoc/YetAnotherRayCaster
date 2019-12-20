@@ -47,6 +47,8 @@
 		<Unit filename="GameData.h" />
 		<Unit filename="Input.h" />
 		<Unit filename="MapBlock.h" />
+		<Unit filename="Rectangle.h" />
+		<Unit filename="Sprite.h" />
 		<Unit filename="Utility.h" />
 		<Unit filename="Vector2D.h" />
 		<Unit filename="main.cpp" />

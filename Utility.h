@@ -38,17 +38,15 @@ Uint32 ColorToUint(int R, int G, int B)
 	return (Uint32)((R << 16) + (G << 8) + (B << 0));
 }
 
-SDL_Color UintToColor(Uint32 color)
-{
-	SDL_Color retColor;
+SDL_Color UintToColor(Uint32 color) {
+  SDL_Color retColor;
 
-	retColor.unused = 255; // Alpha
+  retColor.unused = (color >> 24) & 0xFF;
+  retColor.r = (color >> 16) & 0xFF;
+  retColor.g = (color >> 8) & 0xFF;
+  retColor.b = color & 0xFF;
 
-	retColor.r = (color >> 16) & 0xFF; // Takes second byte
-	retColor.g = (color >> 8) & 0xFF; // Takes third byte
-	retColor.b = color & 0xFF; // Takes last one
-
-	return retColor;
+  return retColor;
 }
 
 float getFractialPart(float arg)
@@ -69,6 +67,15 @@ float invertFraction(float arg)
     float fraction = arg - wholePart;
     fraction = 1.0f - fraction;
     return (float)wholePart + fraction;
+}
+
+inline Uint32 blend(Uint32 color1, Uint32 color2, Uint8 alpha)
+{
+	Uint32 rb = color1 & 0xff00ff;
+	Uint32 g  = color1 & 0x00ff00;
+	rb += ((color2 & 0xff00ff) - rb) * alpha >> 8;
+	g  += ((color2 & 0x00ff00) -  g) * alpha >> 8;
+	return (rb & 0xff00ff) | (g & 0xff00);
 }
 
 inline Uint32* getTexturePixel(SDL_Surface* surf, int i, int j) {
@@ -107,7 +114,7 @@ float degreesToRad(float degrees) {
     return degrees * (pi / 180);
 }
 
-float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray)
+float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray, float sine, float cosine)
 {
 
     /*
@@ -128,26 +135,33 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
         Vector2D<float> scaleCoeffs;
 
 
-        if(bufferRay <= deg90) { // North-east
-            delta.x = 1.0f - getFractialPart(test.x - blockBitSize);
-            scaleCoeffs.x = sinf(ray);
-            delta.y = 1.0f - getFractialPart(test.y - blockBitSize);
-            scaleCoeffs.y = cosf(ray);
-        } else if(bufferRay <= deg180) { // South-east
-            delta.x = 1.0f - getFractialPart(test.x);
-            scaleCoeffs.x = sinf(ray);
-            delta.y = getFractialPart(test.y + blockBitSize);
-            scaleCoeffs.y = cosf(ray + pi);
-        } else if(bufferRay <= deg270) { // South-west
-            delta.x = getFractialPart(test.x + blockBitSize);
-            scaleCoeffs.x = sinf(ray + pi);
-            delta.y = getFractialPart(test.y + blockBitSize);
-            scaleCoeffs.y = cosf(ray + pi);
-        } else { // North-west
-            delta.x = getFractialPart(test.x + blockBitSize);
-            scaleCoeffs.x = sinf(ray + pi);
-            delta.y = 1.0f - getFractialPart(test.y - blockBitSize); // without constant ray overshoots walls by x axis
-            scaleCoeffs.y = cosf(ray);
+        int whichQuarter = (int)(bufferRay / (pi / 2));
+
+        switch(whichQuarter) {
+            case 0:
+                delta.x = 1.0f - getFractialPart(test.x);
+                scaleCoeffs.x = sine;
+                delta.y = 1.0f - getFractialPart(test.y);
+                scaleCoeffs.y = cosine;
+            break;
+            case 1:
+                delta.x = 1.0f - getFractialPart(test.x);
+                scaleCoeffs.x = sine;
+                delta.y = getFractialPart(test.y);
+                scaleCoeffs.y = -cosine;
+            break;
+            case 2:
+                delta.x = getFractialPart(test.x);
+                scaleCoeffs.x = -sine;
+                delta.y = getFractialPart(test.y);
+                scaleCoeffs.y = -cosine;
+            break;
+            case 3:
+                delta.x = getFractialPart(test.x);
+                scaleCoeffs.x = -sine;
+                delta.y = 1.0f - getFractialPart(test.y); // without constant ray overshoots walls by x axis
+                scaleCoeffs.y = cosine;
+            break;
         }
 
          // Delta should not be zero otherwise renderer will loop forever.
@@ -158,9 +172,10 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
             delta.y = blockBitSize;
         }
 
-        distance.x = delta.x / clamp(scaleCoeffs.x, std::numeric_limits<float>::min(), 1.0f);
 
-        distance.y = delta.y / clamp(scaleCoeffs.y, std::numeric_limits<float>::min(), 1.0f);
+        distance.x = delta.x / scaleCoeffs.x;
+
+        distance.y = delta.y / scaleCoeffs.y;
 
         return distance.x < distance.y ? distance.x : distance.y;
 
@@ -319,25 +334,24 @@ void transposeTexture(SDL_Surface** txt)
     *txt = newTxt;
 }
 
+Uint8 getAlpha(Uint32 arg) {
+    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        return (Uint8)arg;
+    #else
+        return (Uint8)arg >> 24;
+    #endif // SDL_BYTEORDER
+}
+
+void loadSprites(std::vector<Sprite>& sprts)
+{
+    Sprite spr({0, 0, 0, 0}, "");
+    sprts.push_back(spr);
+}
+
 void transposeTextures(std::vector<SDL_Surface*>& txts)
 {
     for(size_t i = 0; i < txts.size(); ++i) {
         transposeTexture(&txts.at(i));
-    }
-}
-
-void fillUpTheStars() {
-    std::mt19937 random;
-    random.seed(1);
-    stars = (bool*)realloc(stars, starsWidth * starsHeight);
-    memset(stars, 0, starsWidth * starsHeight);
-
-    for(int i = 0; i < starsHeight; ++i) {
-        for(int j = 0; j < starsWidth; ++j) {
-            if(!(random() % screenWidth / 2)) {
-                stars[i * starsWidth + j] = true;
-            }
-        }
     }
 }
 
@@ -347,6 +361,14 @@ void setWindowPos(int x, int y)
     sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", x, y);
 
     SDL_putenv(env);
+}
+
+SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
+{
+    if(!isMirrored &&  isHorisontal)    return SideOfAWall::NORTH;
+    if(!isMirrored && !isHorisontal)    return SideOfAWall::WEST;
+    if( isMirrored &&  isHorisontal)    return SideOfAWall::SOUTH;
+    if( isMirrored && !isHorisontal)    return SideOfAWall::EAST;
 }
 
 #endif // UTILITY_H_INCLUDED

@@ -199,7 +199,7 @@
 
 1325742239 D
 
-1573810362 source:d:\progs\cpp\raycaster\main.cpp
+1576862883 source:d:\progs\cpp\raycaster\main.cpp
 	<cstdlib>
 	<iostream>
 	<ctime>
@@ -215,6 +215,8 @@
 	"player.h"
 	"Vector2D.h"
 	"rendering.h"
+	"Sprite.h"
+	"Rectangle.h"
 
 1570460030 ed985e028bea01e5e38585e1e24fea9afd894
 	<cstdlib>
@@ -236,26 +238,27 @@
 
 1571392138 d:\progs\cpp\raycaster\mapblock.h
 
-1573807550 d:\progs\cpp\raycaster\controlsstate.h
+1576847606 d:\progs\cpp\raycaster\controlsstate.h
 
-1572796899 d:\progs\cpp\raycaster\utility.h
+1576866603 d:\progs\cpp\raycaster\utility.h
 	<vector>
 	<random>
 	"GameConstants.h"
 	"GameData.h"
 	"Vector2D.h"
 
-1573810644 d:\progs\cpp\raycaster\gameconstants.h
+1576862688 d:\progs\cpp\raycaster\gameconstants.h
 	<limits>
 	"Utility.h"
 	"Vector2D.h"
 
-1572689296 d:\progs\cpp\raycaster\gamedata.h
+1576848283 d:\progs\cpp\raycaster\gamedata.h
 	<vector>
 	"GameConstants.h"
 	"MapBlock.h"
+	"Sprite.h"
 
-1573808157 d:\progs\cpp\raycaster\input.h
+1576166232 d:\progs\cpp\raycaster\input.h
 	"ControlsState.h"
 	"player.h"
 	"rendering.h"
@@ -359,9 +362,16 @@
 
 1570788021 source:d:\progs\cpp\raycaster\controlsstate.cpp
 
-1572797162 d:\progs\cpp\raycaster\rendering.h
+1576862197 d:\progs\cpp\raycaster\rendering.h
 	"Utility.h"
+	"GameData.h"
 
 1572685016 d:\progs\cpp\raycaster\raytraversalthread.h
 	"rendering.h"
+
+1574746639 d:\progs\cpp\raycaster\sprite.h
+	"Rectangle.h"
+	"Utility.h"
+
+1574531524 d:\progs\cpp\raycaster\rectangle.h
 

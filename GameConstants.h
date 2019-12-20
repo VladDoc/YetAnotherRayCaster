@@ -8,13 +8,11 @@
 #include "Utility.h"
 #include "Vector2D.h"
 
-bool textureGradient = false;
-
 int screenWidth = 800;
 int screenHeight = 480;
 const int screenBits = 32;
 
-int currentRes = 2;
+int currentRes = 1;
 
 const int mapHeight = 16;
 const int mapWidth = 16;
@@ -90,5 +88,12 @@ SDL_Color floorColor = defFloorColor;
 
 Uint32 dayFogColor = ColorToUint(127, 127, 127);
 Uint32 nightFogColor = ColorToUint(0, 0, 0);
+
+Uint32 starColors[4] = {
+                         ColorToUint(255, 0, 0),
+                         ColorToUint(0, 0, 255),
+                         ColorToUint(255, 255, 0),
+                         ColorToUint(165, 165, 165)
+                       };
 
 #endif // GAMECONSTANTS_H_INCLUDED

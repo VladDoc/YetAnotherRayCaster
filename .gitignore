@@ -11,6 +11,9 @@
 *.depend
 *.layout
 
+#libraries
+[Ll]odepng/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

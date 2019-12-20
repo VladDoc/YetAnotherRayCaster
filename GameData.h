@@ -7,6 +7,7 @@
 
 #include "GameConstants.h"
 #include "MapBlock.h"
+#include "Sprite.h"
 
 float walkingSpeed = 0.2f;
 
@@ -22,6 +23,8 @@ std::vector<SDL_Surface*> m_textures;
 std::vector<SDL_Surface*> m_lightmaps;
 
 std::vector<SDL_Surface*> sky_textures;
+
+std::vector<Sprite> hudSprites;
 
 MapBlock map[mapHeight][mapWidth] =
 {
@@ -44,17 +47,46 @@ MapBlock map[mapHeight][mapWidth] =
 };
 
 
-bool* stars;
+Uint8* stars;
 
 float* distances;
 float* rays;
 Vector2D<float>* rayPositions;
+
+FILE* logFile;
+
+thread_local std::mt19937 random;
+thread_local std::uniform_int_distribution<int> dist{0, 255};
+
+void fillUpTheStars() {
+    std::mt19937 r;
+    r.seed(1);
+    stars = (Uint8*)realloc(stars, starsWidth * starsHeight * sizeof(*stars));
+    memset(stars, 0, starsWidth * starsHeight);
+
+    for(int i = 0; i < starsHeight; ++i) {
+        for(int j = 0; j < starsWidth; ++j) {
+            if(!(r() % screenWidth / 2)) {
+                stars[i * starsWidth + j] = r() & 0xFF;
+            }
+        }
+    }
+}
+
+enum class SideOfAWall
+{
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST
+};
 
 void allocateScreenSizeSensitiveData()
 {
     distances = (float*) realloc(distances, sizeof(float) * screenWidth);
     rayPositions = (Vector2D<float>*) realloc(rayPositions, sizeof(Vector2D<float>) * screenWidth);
     rays =  (float*) realloc(rays, sizeof(float) * screenWidth);
+    fillUpTheStars();
 }
 
 void freeScreenSizeSensitiveData()

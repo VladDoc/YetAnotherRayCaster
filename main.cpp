@@ -16,9 +16,9 @@
 #include "player.h"
 #include "Vector2D.h"
 #include "rendering.h"
+#include "Sprite.h"
+#include "Rectangle.h"
 
-thread_local std::mt19937 random;
-thread_local std::uniform_int_distribution<int> dist{0, 255};
 
 void freeTextures() {
     for(auto i = textures.begin(); i != textures.end(); i++) {
@@ -34,91 +34,6 @@ void freeTextures() {
     for(auto i = m_lightmaps.begin(); i != m_lightmaps.end(); i++) {
         SDL_FreeSurface(*i);
     }
-}
-
-inline Uint32 getSkyGradientedColor(const SDL_Color color, const int i, const int horLine)
-{
-    return ColorToUint(
-                clamp((int)(color.r * (float)(i - horLine + 256) / 256), 0, 255),
-                clamp((int)(color.g * (float)(i - horLine + 256) / 256), 0, 255),
-                clamp((int)(color.b * (float)(i - horLine + 256) / 256), 0, 255)
-            );
-}
-
-inline Uint32 getFloorGradientedColor(const SDL_Color color, const int i, const int horLine)
-{
-    return ColorToUint(
-                clamp((int)(color.r * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
-                clamp((int)(color.g * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200),
-                clamp((int)(color.b * (float)(screenHeight - i + horLine / 2 + 192) / 256), 0, 200)
-            );
-}
-
-Uint32 getStarColorPixel()
-{
-
-    return ColorToUint(
-                clamp(dist(random), 165, 255),
-                clamp(dist(random), 165, 255),
-                clamp(dist(random), 165, 255)
-    );
-}
-
-inline Uint32 fastPixelShadowing(const Uint32 pix)
-{
-    return (pix >> 1) & 0x7F7F7F;
-}
-
-inline Uint32 applyWallGradientToPixel(const Uint32 pix, const float distanceToAWall)
-{
-    SDL_Color pixelRGB = UintToColor(pix);
-    return ColorToUint(
-                clamp((int)((pixelRGB.r / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.r / 3, clamp((int)(pixelRGB.r * 1.1), 0, 255)),
-                clamp((int)((pixelRGB.g / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.g / 3, clamp((int)(pixelRGB.g * 1.1), 0, 255)),
-                clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32), (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.1), 0, 255))
-            );
-}
-
-inline Uint32 getShadowedWallColor(const SDL_Color color, const float distanceToAWall)
-{
-    return ColorToUint(
-                clamp((int)((color.r * 0.7f) * (distanceToAWall * 16) / 32), (int)(color.r / 1.2f), 255),
-                clamp((int)((color.g * 0.7f) * (distanceToAWall * 16) / 32), (int)(color.g / 1.2f), 255),
-                clamp((int)((color.b * 0.7f) * (distanceToAWall * 16) / 32), (int)(color.b / 1.2f), 255)
-            );
-}
-
-inline Uint32 getGradientedWallColor(const SDL_Color color, const float distanceToAWall)
-{
-    return ColorToUint(
-                clamp((int)(color.r * (distanceToAWall * 16) / 32), (int)color.r, 255),
-                clamp((int)(color.g * (distanceToAWall * 16) / 32), (int)color.g, 255),
-                clamp((int)(color.b * (distanceToAWall * 16) / 32), (int)color.b, 255)
-            );
-}
-
-enum class SideOfAWall {
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST
-};
-
-
-SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
-{
-    if(!isMirrored &&  isHorisontal)    return SideOfAWall::NORTH;
-    if(!isMirrored && !isHorisontal)    return SideOfAWall::WEST;
-    if( isMirrored &&  isHorisontal)    return SideOfAWall::SOUTH;
-    if( isMirrored && !isHorisontal)    return SideOfAWall::EAST;
-}
-
-inline Uint32 blend(Uint32 color1, Uint32 color2, Uint8 alpha) {
-	Uint32 rb = color1 & 0xff00ff;
-	Uint32 g  = color1 & 0x00ff00;
-	rb += ((color2 & 0xff00ff) - rb) * alpha >> 8;
-	g  += ((color2 & 0x00ff00) -  g) * alpha >> 8;
-	return (rb & 0xff00ff) | (g & 0xff00);
 }
 
 void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& test, float distanceToAWall)
@@ -182,6 +97,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
         bool isLightMap = currentBlock.getIsLightMapped();
 
 
+
         if(!shouldTextureBeMirrored) {
             // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
             if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size()-1)];
@@ -194,9 +110,20 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
         Uint32 skyLightColor;
         Uint32 fogColor;
 
+        Uint32 wallColorPixel;
+
+        // Non textured wall routine
+        if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
+           whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    )
+        {
+            wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
+        } else {
+            wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
+        }
+
+
         if(texturedSky) {
-            skyLightColor = *getTransposedScaledTexturePixel(sky_textures[0],
-                             starsWidth, starsHeight, starsHeight / 4, starsWidth / 2);
+            skyLightColor = *getTransposedTexturePixel(sky_textures[0], 1907, 604);
         } else {
             skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
         }
@@ -255,13 +182,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                     }
 
                 } else {
-                    // Non textured wall routine
-                    if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
-                       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    ) {
-                          pixelColor = getShadowedWallColor(wallColor, distanceToAWall);
-                    } else {
-                        pixelColor = getGradientedWallColor(wallColor, distanceToAWall);
-                    }
+                    pixelColor = wallColorPixel;
                 }
                 if(isLightMap) {
                         // If current wall is lightmapped(on runtime) then transform pixel accordingly.
@@ -277,7 +198,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
 
                  // If night mode enabled darken pixel even more
                 if(night) {
-                        pixelColor = fastPixelShadowing(fastPixelShadowing(pixelColor));
+                        pixelColor = fastPixelShadowing(pixelColor);
                 }
 
                 if(fog) {
@@ -293,7 +214,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& 
                     if(night) pixelColor = fastPixelShadowing(pixelColor);
                     if(fog) {
                         pixelColor = blend(pixelColor, fogColor,
-                               clamp((starsHeight - (i + (horizonCap - horizonLine)))  / (starsHeight / 2 / 256), 0, 255));
+                               clamp((starsHeight - (i + (horizonCap - horizonLine)))  / 2 / (starsHeight / 2 / 256), 0, 255));
                     }
                     if(coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
                 } else {
@@ -337,7 +258,7 @@ void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int thr
 
 int main(int argc, char** argv)
 {
-
+    logFile = fopen("log.txt", "w");
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
@@ -379,7 +300,6 @@ int main(int argc, char** argv)
     transposeTextures(lightmaps);
     transposeTextures(m_textures);
     transposeTextures(m_lightmaps);
-    fillUpTheStars();
 
     if(textures.empty() || lightmaps.empty())
     {
@@ -469,6 +389,6 @@ int main(int argc, char** argv)
     SDL_FreeSurface(screen);
 
     freeScreenSizeSensitiveData();
-
+    fclose(logFile);
     return 0;
 }

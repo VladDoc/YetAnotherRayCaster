@@ -54,7 +54,6 @@ void changeResolution(SDL_Surface** screen, const Vector2D<int> res)
     starsWidth = calcStarsWidth();
     starsHeight = calcStarsHeight();
 
-    fillUpTheStars();
     FOV = calcFOV();
     allocateScreenSizeSensitiveData();
 }
@@ -133,7 +132,7 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
             }
             if(event.key.keysym.sym == SDLK_PAGEDOWN) {
                  if(!wasSkyIsAFloorPressed) {
-                    isFloorASky ? isFloorASky = false : isFloorASky = true;
+                    isFloorASky = !isFloorASky;
                     wasSkyIsAFloorPressed = true;
                  }
             }
@@ -153,10 +152,10 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
                 horizonLine = 0;
             }
             if(keyState[SDLK_F6] && keyState[SDLK_F9]) {
-                easterEgg = easterEgg ? false : true;
+                easterEgg = !easterEgg;
             }
             if(event.key.keysym.sym == SDLK_F12) {
-                textureGradient = textureGradient ? false : true;
+                textureGradient = !textureGradient;
             }
             if(event.key.keysym.sym == SDLK_F11) {
                 if(naiveApproach) {
@@ -187,19 +186,19 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
                 }
             }
             if(event.key.keysym.sym == SDLK_F10) {
-                night = night ? false : true;
+                night = !night;
             }
             if(event.key.keysym.sym == SDLK_F9) {
-                texturedSky = texturedSky ? false : true;
+                texturedSky = !texturedSky;
             }
             if(event.key.keysym.sym == SDLK_F6) {
-                multithreaded = multithreaded ? false : true;
+                multithreaded = !multithreaded;
             }
             if(event.key.keysym.sym == SDLK_F7) {
-                fog = fog ? false : true;
+                fog = !fog;
             }
             if(event.key.keysym.sym == SDLK_F8) {
-                coloredLight = coloredLight ? false : true;
+                coloredLight = !coloredLight;
             }
             break;
         }
