@@ -20,245 +20,261 @@
 #include "Rectangle.h"
 
 
-void freeTextures() {
-    for(auto i = textures.begin(); i != textures.end(); i++) {
+void freeTextures(GameData& gamedata) {
+    for(auto i = gamedata.textures.begin(); i != gamedata.textures.end(); i++) {
         SDL_FreeSurface(*i);
     }
-    for(auto i = lightmaps.begin(); i != lightmaps.end(); i++) {
+    for(auto i = gamedata.lightmaps.begin(); i != gamedata.lightmaps.end(); i++) {
         SDL_FreeSurface(*i);
     }
 
-    for(auto i = m_textures.begin(); i != m_textures.end(); i++) {
+    for(auto i = gamedata.m_textures.begin(); i != gamedata.m_textures.end(); i++) {
         SDL_FreeSurface(*i);
     }
-    for(auto i = m_lightmaps.begin(); i != m_lightmaps.end(); i++) {
+    for(auto i = gamedata.m_lightmaps.begin(); i != gamedata.m_lightmaps.end(); i++) {
         SDL_FreeSurface(*i);
     }
 }
 
-void renderColumn(float ray, const int j, SDL_Surface* screen, Vector2D<float>& test, float distanceToAWall)
+void renderColumn(float ray, const int j, SDL_Surface* screen,
+                  Vector2D<float>& test, float distanceToAWall, GameData& gamedata, ControlState ctrls = controls)
 {
+    SDL_Color wallColor;
+    if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
+       withinRange((float)test.y, 0.0f, (float)mapHeight)) {
+            wallColor = gamedata.map[(int)test.y][(int)test.x].getColor();
+    } else {
+        wallColor = MapBlock::defWallColor;
+    }
 
 
-        SDL_Color wallColor;
-        if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
-           withinRange((float)test.y, 0.0f, (float)mapHeight)) {
-                wallColor = map[(int)test.y][(int)test.x].getColor();
-        } else {
-            wallColor = MapBlock::defWallColor;
-        }
+    int ceilingHeight = 0;
 
+    if(!controls.easterEgg) {
+        ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);
+    } else {
+        ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall) + abs(j  - screenWidth / 2);
+    }
 
-        int ceilingHeight = 0;
+    int floorHeight = screenHeight - ceilingHeight;
 
-        if(!easterEgg) {
-            ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);
-        } else {
-            ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall) + abs(j  - screenWidth / 2);
-        }
+    // Increases height of a wall
+    ceilingHeight -= (floorHeight - ceilingHeight) *
+                     gamedata.map[(int)test.y][(int)test.x].height - (floorHeight - ceilingHeight);
 
-        int floorHeight = screenHeight - ceilingHeight;
+    ceilingHeight += gamedata.horizonLine;
+    floorHeight += gamedata.horizonLine;
 
-        // Increases height of a wall
-        ceilingHeight -= (floorHeight - ceilingHeight) * map[(int)test.y][(int)test.x].height - (floorHeight - ceilingHeight);
+    float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+    int skyTextureIndex = clamp((int)(starsWidth * (bufferRay / (pi * 2))), 0, starsWidth-1);
+    int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
 
-        ceilingHeight += horizonLine;
-        floorHeight += horizonLine;
+    bool shouldTextureBeMirrored = false;
+    bool isHorisontal = false;
+    float checkY = test.y;
+    float scalingVar;
 
-        float bufferRay = clampLooping(ray, 0.0f, pi * 2);
-        int skyTextureIndex = clamp((int)(starsWidth * (bufferRay / (pi * 2))), 0, starsWidth-1);
-        int skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
+    if(gamedata.map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
+       gamedata.map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
+            isHorisontal = true;
+            scalingVar = test.x; // Then wall is along horizontal axis
+            if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
+                shouldTextureBeMirrored = true;
+            }
+    } else {
+            scalingVar = test.y;
+            if(getFractialPart(test.x) < 0.5f) {
+                shouldTextureBeMirrored = true;
+            }
+    }
 
-        bool shouldTextureBeMirrored = false;
-        bool isHorisontal = false;
-        float checkY = test.y;
-        float scalingVar;
+    MapBlock currentBlock = gamedata.map[(int)test.y][(int)test.x];
 
-        if(map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
-           map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
-                isHorisontal = true;
-                scalingVar = test.x; // Then wall is along horizontal axis
-                if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
-                    shouldTextureBeMirrored = true;
-                }
-        } else {
-                scalingVar = test.y;
-                if(getFractialPart(test.x) < 0.5f) {
-                    shouldTextureBeMirrored = true;
-                }
-        }
+    SDL_Surface* texture = NULL;
+    SDL_Surface* lightmap = NULL;
 
-        MapBlock currentBlock = map[(int)test.y][(int)test.x];
-
-        SDL_Surface* texture = NULL;
-        SDL_Surface* lightmap = NULL;
-
-        bool isTextured = currentBlock.getIsTextured();
-        bool isLightMap = currentBlock.getIsLightMapped();
+    bool isTextured = currentBlock.getIsTextured();
+    bool isLightMap = currentBlock.getIsLightMapped();
 
 
 
-        if(!shouldTextureBeMirrored) {
-            // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
-            if(isTextured) texture = textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size()-1)];
-            if(isLightMap) lightmap = lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size()-1)];
-        } else {
-            if(isTextured) texture = m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)textures.size()-1)];
-            if(isLightMap) lightmap = m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)lightmaps.size()-1)];
-        }
+    if(!shouldTextureBeMirrored) {
+        // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
+        if(isTextured) texture =
+            gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)];
+        if(isLightMap) lightmap =
+            gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)];
+    } else {
+        if(isTextured) texture =
+            gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)];
+        if(isLightMap) lightmap =
+            gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)];
+    }
 
-        Uint32 skyLightColor;
-        Uint32 fogColor;
+    Uint32 skyLightColor;
+    Uint32 fogColor;
 
-        Uint32 wallColorPixel;
+    Uint32 wallColorPixel;
 
-        // Non textured wall routine
-        if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
-           whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    )
+    // Non textured wall routine
+    if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST  ||
+       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    )
+    {
+        wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
+    } else {
+        wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
+    }
+
+
+    if(controls.texturedSky) {
+        skyLightColor = *getTransposedTexturePixel(gamedata.sky_textures[0], 1907, 604);
+    } else {
+        skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
+    }
+
+    if(controls.night) {
+        fogColor = nightFogColor;
+    } else {
+        fogColor = dayFogColor;
+    }
+
+    for(int i = 0; i < screenHeight; ++i)
+    {
+        Uint32* pixel = getTexturePixel(screen, i, j);
+        Uint32 pixelColor;
+        if(i < ceilingHeight)
         {
-            wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
-        } else {
-            wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
-        }
-
-
-        if(texturedSky) {
-            skyLightColor = *getTransposedTexturePixel(sky_textures[0], 1907, 604);
-        } else {
-            skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
-        }
-
-        if(night) {
-            fogColor = nightFogColor;
-        } else {
-            fogColor = dayFogColor;
-        }
-
-        for(int i = 0; i < screenHeight; ++i)
-        {
-            Uint32* pixel = getTexturePixel(screen, i, j);
-            Uint32 pixelColor;
-            if(i < ceilingHeight)
-            {
-                // If star exists in the stars map for the current location set white flickering pixel
-                if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
-                    pixelColor = getStarColorPixel();
+            // If star exists in the stars map for the current location set white flickering pixel
+            if(ctrls.shouldStarsBeRendered &&
+               gamedata.stars[(i + (horizonCap - gamedata.horizonLine)) * starsWidth + skyWidthIndex]) {
+                pixelColor = getStarColorPixel();
+            } else {
+                // Do gradiented color sky or retrieve pixel out of sky box
+                if(!ctrls.texturedSky) {
+                    pixelColor = getSkyGradientedColor(skyColor, i, gamedata.horizonLine);
                 } else {
-                    // Do gradiented color sky or retrieve pixel out of sky box
-                    if(!texturedSky) {
-                        pixelColor = getSkyGradientedColor(skyColor, i, horizonLine);
-                    } else {
-                            pixelColor = *getTransposedScaledTexturePixel(sky_textures[0], starsWidth, starsHeight,
-                                                            i + (horizonCap - horizonLine), skyTextureIndex);
-                    }
-                    if(fog) {
-                        pixelColor = blend(pixelColor, fogColor,
-                                     clamp((i + (horizonCap - horizonLine))  /  2 / (starsHeight / 2 / 256), 0, 255));
-                    }
+                        pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
+                                      Constants::starsWidth, Constants::starsHeight,
+                                      i + (horizonCap - gamedata.horizonLine), skyTextureIndex);
+                }
+                if(controls.fog) {
+                    pixelColor = blend(pixelColor, fogColor,
+                                 clamp((i + (Constants::horizonCap - gamedata.horizonLine)) /
+                                 (starsHeight / 1024), 0, 255));
                 }
             }
-            else if(i >= ceilingHeight && i < floorHeight)
-            {
-                int wallSizeOnScreen = floorHeight - ceilingHeight;
-                Uint32* texturePixel = NULL;
-                Uint32* lightmapPixel = NULL;
+        }
+        else if(i >= ceilingHeight && i < floorHeight)
+        {
+            int wallSizeOnScreen = floorHeight - ceilingHeight;
+            Uint32* texturePixel = NULL;
+            Uint32* lightmapPixel = NULL;
 
-                // Textured wall routine
-                if(isTextured) {
-                        // Swaped w and h because the texture is transposed. Same with lightmaps.
-                        texturePixel = getTransposedTexturePixel(texture, (int)((i - ceilingHeight) * ((float)texture->w / (float)wallSizeOnScreen)),
-                                                        (int)(getFractialPart(scalingVar) * (float)texture->h));
-                        pixelColor = *texturePixel;
+            // Textured wall routine
+            if(isTextured) {
+                // Swaped w and h because the texture is transposed. Same with lightmaps.
+                texturePixel = getTransposedTexturePixel(texture,
+                        (int)((i - ceilingHeight) * ((float)texture->w / (float)wallSizeOnScreen)),
+                        (int)(getFractialPart(scalingVar) * (float)texture->h));
 
-                    if(textureGradient) {
-                        pixelColor = applyWallGradientToPixel(pixelColor, distanceToAWall);
-                    }
+                    pixelColor = *texturePixel;
 
-                    // Darkens walls for an illusion of directed light
-                    if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST   ||
-                       whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    ) {
-                        // Doing fast pixel transformation for the texture, so the performance won't suffer
-                            pixelColor = fastPixelShadowing(pixelColor);
-                    }
-
-                } else {
-                    pixelColor = wallColorPixel;
+                if(ctrls.textureGradient) {
+                    pixelColor = applyWallGradientToPixel(pixelColor, distanceToAWall);
                 }
-                if(isLightMap) {
-                        // If current wall is lightmapped(on runtime) then transform pixel accordingly.
-                        // Very slow so it's never used.
-                        lightmapPixel = getTransposedTexturePixel(lightmap, (int)((i - ceilingHeight) * ((float)lightmap->w / (float)wallSizeOnScreen)),
-                                                        (int)(getFractialPart(scalingVar) * (float)lightmap->h));
-                        SDL_Color texColor = UintToColor(pixelColor);
-                        SDL_Color lightColor = UintToColor(*lightmapPixel);
-                        SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
 
-                        pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
-                    }
-
-                 // If night mode enabled darken pixel even more
-                if(night) {
+                // Darkens walls for an illusion of directed light
+                if(whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::WEST   ||
+                   whichSide(shouldTextureBeMirrored, isHorisontal) == SideOfAWall::NORTH    ) {
+                    // Doing fast pixel transformation for the texture, so the performance won't suffer
                         pixelColor = fastPixelShadowing(pixelColor);
                 }
 
-                if(fog) {
-                    pixelColor = blend(pixelColor, fogColor, clamp((Uint8)(distanceToAWall * 12), (Uint8)0, (Uint8)255));
+            } else {
+                pixelColor = wallColorPixel;
+            }
+            if(isLightMap) {
+                    // If current wall is lightmapped(on runtime) then transform pixel accordingly.
+                    // Very slow so it's never used.
+                    lightmapPixel = getTransposedTexturePixel(lightmap,
+                            (int)((i - ceilingHeight) * ((float)lightmap->w / (float)wallSizeOnScreen)),
+                            (int)(getFractialPart(scalingVar) * (float)lightmap->h));
+
+                    SDL_Color texColor = UintToColor(pixelColor);
+                    SDL_Color lightColor = UintToColor(*lightmapPixel);
+                    SDL_Color finalColor = transformColorByLightMap(texColor, lightColor);
+
+                    pixelColor = ColorToUint(finalColor.r, finalColor.g, finalColor.b);
                 }
 
-                if(coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
+             // If night mode enabled darken pixel even more
+            if(ctrls.night) {
+                    pixelColor = fastPixelShadowing(pixelColor);
             }
-            else
-            {
-                if(!isFloorASky) {
-                    pixelColor = getFloorGradientedColor(floorColor, i, horizonLine);
-                    if(night) pixelColor = fastPixelShadowing(pixelColor);
-                    if(fog) {
-                        pixelColor = blend(pixelColor, fogColor,
-                               clamp((starsHeight - (i + (horizonCap - horizonLine)))  / 2 / (starsHeight / 2 / 256), 0, 255));
-                    }
-                    if(coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
-                } else {
-                    if(shouldStarsBeRendered && stars[(i + (horizonCap - horizonLine)) * starsWidth + skyWidthIndex]) {
-                        pixelColor = getStarColorPixel();
-                    } else {
-                        if(!texturedSky) {
-                            pixelColor = getSkyGradientedColor(skyColor, i, horizonLine);
-                        } else {
-                            pixelColor = *getTransposedScaledTexturePixel(sky_textures[0], starsWidth, starsHeight,
-                                                            i + (horizonCap - horizonLine), skyTextureIndex);
-                        }
-                        if(fog) {
-                            pixelColor = blend(pixelColor, fogColor,
-                                        clamp((starsHeight - (i + (horizonCap - horizonLine)))  / 2 / (starsHeight / 2 / 256), 0, 255));
-                        }
-                    }
-                }
+
+            if(ctrls.fog) {
+                pixelColor = blend(pixelColor, fogColor, clamp((Uint8)(distanceToAWall * 12), (Uint8)0, (Uint8)255));
             }
-            *pixel = pixelColor;
+
+            if(ctrls.coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
         }
-}
+        else
+        {
+            if(!ctrls.isFloorASky) {
+                pixelColor = getFloorGradientedColor(floorColor, i, gamedata.horizonLine);
+                if(ctrls.night) pixelColor = fastPixelShadowing(pixelColor);
+                if(ctrls.fog) {
+                    pixelColor = blend(pixelColor, fogColor,
+                           clamp((Constants::starsHeight - (i + (horizonCap - gamedata.horizonLine))) /
+                           2 / (Constants::starsHeight / 2 / 256), 0, 255));
+                }
+                if(ctrls.coloredLight) pixelColor = blend(pixelColor, skyLightColor, 92);
+            } else {
+                if(ctrls.shouldStarsBeRendered &&
+                   gamedata.stars[(i + (horizonCap - gamedata.horizonLine)) * starsWidth + skyWidthIndex]) {
 
-void calculateDistances(float* inRays, int from, int to)
-{
-    for(int j = from; j < to; ++j)
-    {
-        rayTraversal(inRays[j], distances, rayPositions, j);
+                    pixelColor = getStarColorPixel();
+                } else {
+                    if(!ctrls.texturedSky) {
+                        pixelColor = getSkyGradientedColor(skyColor, i, gamedata.horizonLine);
+                    } else {
+                        pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
+                                        Constants::starsWidth, Constants::starsHeight,
+                                        i + (horizonCap - gamedata.horizonLine), skyTextureIndex);
+                    }
+                    if(ctrls.fog) {
+                        pixelColor = blend(pixelColor, fogColor,
+                                     clamp((Constants::starsHeight - (i + (horizonCap - gamedata.horizonLine))) /
+                                     2 / (starsHeight / 2 / 256), 0, 255));
+                    }
+                }
+            }
+        }
+        *pixel = pixelColor;
     }
 }
 
-void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int threadId)
+void calculateDistances(float* inRays, int from, int to, GameData* gamedata)
+{
+    for(int j = from; j < to; ++j)
+    {
+        rayTraversal(*gamedata, inRays[j], gamedata->distances, gamedata->rayPositions, j);
+    }
+}
+
+void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int threadId, GameData* gamedata)
 {
     random.seed(threadId);
     for(int j = from; j < to; ++j)
     {
-        renderColumn(inRays[j], j, screen, rayPositions[j], distances[j]);
+        renderColumn(inRays[j], j, screen, gamedata->rayPositions[j], gamedata->distances[j], *gamedata);
     }
 }
 
 
 int main(int argc, char** argv)
 {
-    logFile = fopen("log.txt", "w");
+    data.logFile = fopen("log.txt", "w");
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
@@ -279,29 +295,28 @@ int main(int argc, char** argv)
     }
 
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
+    loadTextures(data.textures);
+    loadTextures(data.m_textures);
 
-    loadTextures(textures);
-    loadTextures(m_textures);
+    loadLightmaps(data.lightmaps);
+    loadLightmaps(data.m_lightmaps);
 
-    loadLightmaps(lightmaps);
-    loadLightmaps(m_lightmaps);
+    loadSkyTextures(data.sky_textures);
 
-    loadSkyTextures(sky_textures);
+    mirrorTextures(data.m_textures);
+    mirrorTextures(data.m_lightmaps);
 
-    mirrorTextures(m_textures);
-    mirrorTextures(m_lightmaps);
+    doLightMapsToAllTextures(data.textures, data.lightmaps, data);
+    doLightMapsToAllTextures(data.m_textures, data.m_lightmaps, data);
+    setLightMapsTo0(data);
 
-    doLightMapsToAllTextures(textures, lightmaps);
-    doLightMapsToAllTextures(m_textures, m_lightmaps);
-    setLightMapsTo0();
+    transposeTextures(data.sky_textures);
+    transposeTextures(data.textures);
+    transposeTextures(data.lightmaps);
+    transposeTextures(data.m_textures);
+    transposeTextures(data.m_lightmaps);
 
-    transposeTextures(sky_textures);
-    transposeTextures(textures);
-    transposeTextures(lightmaps);
-    transposeTextures(m_textures);
-    transposeTextures(m_lightmaps);
-
-    if(textures.empty() || lightmaps.empty())
+    if(data.textures.empty() || data.lightmaps.empty())
     {
         printf("\nCould not load textures.\n");
         return 1;
@@ -313,37 +328,38 @@ int main(int argc, char** argv)
     SDL_ShowCursor(SDL_DISABLE);
     int count = 0;
 
-    allocateScreenSizeSensitiveData();
+    data.allocateScreenSizeSensitiveData();
 
-    while (!done)
+    while (!data.done)
     {
 
         int start = SDL_GetTicks();
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
-            checkControls(event, &screen);
+            checkControls(event, &screen, data);
         }
 
-        doActions(frameTime);
+        doActions(frameTime, data);
 
-        player.angle = clampLooping(player.angle, 0.0f, pi * 2);
+        data.player.angle = clampLooping(data.player.angle, 0.0f, pi * 2);
 
         for(int j = 0; j < screenWidth; ++j)
         {
-           rays[j] = (player.angle - FOV / 2.0f) + ((float)j / (float)screenWidth) * FOV;
+           data.rays[j] = (data.player.angle - FOV / 2.0f) +
+                          ((float)j / (float)Constants::screenWidth) * FOV;
         }
 
 
         size_t numThreads;
-        if(multithreaded) numThreads = std::thread::hardware_concurrency();
+        if(controls.multithreaded) numThreads = std::thread::hardware_concurrency();
         else numThreads = 1;
 
         std::thread** distanceThreads = new std::thread*[numThreads];
 
         for(size_t i = 0; i < numThreads; ++i) {
             distanceThreads[i] =
-                new std::thread(calculateDistances, rays,
-                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads));
+                new std::thread(calculateDistances, data.rays,
+                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads), &data);
         }
 
         for(size_t i = 0; i < numThreads; ++i) {
@@ -351,12 +367,13 @@ int main(int argc, char** argv)
             delete distanceThreads[i];
         }
 
+        delete[] distanceThreads;
         std::thread** renderThreads = new std::thread*[numThreads];
 
         for(size_t i = 0; i < numThreads; ++i) {
             renderThreads[i] =
-                    new std::thread(renderColumns, screen, rays,
-                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads), rand());
+                    new std::thread(renderColumns, screen, data.rays,
+                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads), rand(), &data);
         }
 
         for(size_t i = 0; i < numThreads; ++i) {
@@ -364,6 +381,7 @@ int main(int argc, char** argv)
             delete renderThreads[i];
         }
 
+        delete[] renderThreads;
         int end = SDL_GetTicks();
         frameTime = end - start;
 
@@ -385,10 +403,10 @@ int main(int argc, char** argv)
         ++count;
     }
 
-    freeTextures();
+    freeTextures(data);
     SDL_FreeSurface(screen);
 
-    freeScreenSizeSensitiveData();
-    fclose(logFile);
+    data.freeScreenSizeSensitiveData();
+    fclose(data.logFile);
     return 0;
 }

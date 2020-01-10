@@ -126,7 +126,7 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
      *          which quadrant of circle player currently is.
      *
      */
-    if(!naiveApproach) {
+    if(!controls.naiveApproach) {
 
         float bufferRay = clampLooping(ray, 0.0f, pi * 2);
 
@@ -283,23 +283,24 @@ void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
 }
 
 void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
-                              std::vector<SDL_Surface*>& lmp)
+                              std::vector<SDL_Surface*>& lmp,
+                              GameData& d)
 {
     for(int i = 0; i < mapHeight; ++i) {
         for(int j = 0; j < mapWidth; ++j) {
-            if(map[i][j].getIsLightMapped() && map[i][j].getIsTextured()) {
-                applyLightMapToTexture(txt.at(map[i][j].getTextureIndex()),
-                                       lmp.at(map[i][j].getLightMapIndex()));
+            if(d.map[i][j].getIsLightMapped() && d.map[i][j].getIsTextured()) {
+                applyLightMapToTexture(txt.at(d.map[i][j].getTextureIndex()),
+                                       lmp.at(d.map[i][j].getLightMapIndex()));
             }
         }
     }
 }
 
-void setLightMapsTo0()
+void setLightMapsTo0(GameData& d)
 {
     for(int i = 0; i < mapHeight; ++i) {
         for(int j = 0; j < mapWidth; ++j) {
-            map[i][j].lightmap = 0;
+            d.map[i][j].lightmap = 0;
         }
     }
 }

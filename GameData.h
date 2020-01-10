@@ -6,9 +6,13 @@
 #include <vector>
 
 #include "GameConstants.h"
+#include "player.h"
 #include "MapBlock.h"
 #include "Sprite.h"
 
+using namespace Constants;
+
+struct GameData {
 float walkingSpeed = 0.2f;
 
 int horizonLine = 0; // 0 is default it means that horizon won't be changed
@@ -55,9 +59,6 @@ Vector2D<float>* rayPositions;
 
 FILE* logFile;
 
-thread_local std::mt19937 random;
-thread_local std::uniform_int_distribution<int> dist{0, 255};
-
 void fillUpTheStars() {
     std::mt19937 r;
     r.seed(1);
@@ -72,14 +73,6 @@ void fillUpTheStars() {
         }
     }
 }
-
-enum class SideOfAWall
-{
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST
-};
 
 void allocateScreenSizeSensitiveData()
 {
@@ -96,5 +89,22 @@ void freeScreenSizeSensitiveData()
     free(rays);
     free(stars);
 }
+
+Player player{2.0f, 2.0f, pi / 4};
+
+};
+
+GameData data;
+
+thread_local std::mt19937 random;
+thread_local std::uniform_int_distribution<int> dist{0, 255};
+
+enum class SideOfAWall
+{
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST
+};
 
 #endif // GAMEDATA_H_INCLUDED

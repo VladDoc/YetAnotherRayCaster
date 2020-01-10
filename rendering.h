@@ -6,7 +6,7 @@
 #include "Utility.h"
 #include "GameData.h"
 
-void rayTraversal(float ray, float* distArray, Vector2D<float>* rayPosArray, int j = 0)
+void rayTraversal(GameData& gamedata, float ray, float* distArray, Vector2D<float>* rayPosArray, int j = 0)
 {
         float distanceToAWall = 0.0f;
 
@@ -16,8 +16,8 @@ void rayTraversal(float ray, float* distArray, Vector2D<float>* rayPosArray, int
         eye.y = cosf(ray);
 
         Vector2D<float> test;
-        test.x = player.x;
-        test.y = player.y;
+        test.x = gamedata.player.x;
+        test.y = gamedata.player.y;
 
         int wasWallHit = 0;
 
@@ -25,8 +25,8 @@ void rayTraversal(float ray, float* distArray, Vector2D<float>* rayPosArray, int
         {
             distanceToAWall += getDistanceToTheNearestIntersection(test, ray, eye.x, eye.y);
 
-            test.x = player.x + eye.x * distanceToAWall;
-            test.y = player.y + eye.y * distanceToAWall;
+            test.x = gamedata.player.x + eye.x * distanceToAWall;
+            test.y = gamedata.player.y + eye.y * distanceToAWall;
 
             if(!withinRange(test.x, 0.0f, (float)mapWidth) ||
                !withinRange(test.y, 0.0f, (float)mapHeight))
@@ -34,14 +34,14 @@ void rayTraversal(float ray, float* distArray, Vector2D<float>* rayPosArray, int
                 wasWallHit = 1;
                 distanceToAWall = offMapDepth;
            } else {
-                wasWallHit = !(int)map[(int)test.y][(int)test.x].isEmpty();
+                wasWallHit = !(int)gamedata.map[(int)test.y][(int)test.x].isEmpty();
             }
         }
 //        test.x = clamp(test.x, 0.0f, (float)mapWidth);
 //        test.y = clamp(test.y, 0.0f, (float)mapHeight);
 
         // Constant gives slightly better fish-eye correction. Without it walls are a little bit more 'rounded'
-        distanceToAWall *= cosf(ray - player.angle - (FOV / (screenWidth * 8)));
+        distanceToAWall *= cosf(ray - gamedata.player.angle - (FOV / (screenWidth * 8)));
 
         if(distArray) distArray[j] = distanceToAWall;
         if(rayPosArray) rayPosArray[j] = test;

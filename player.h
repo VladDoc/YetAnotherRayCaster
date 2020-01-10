@@ -8,7 +8,7 @@ struct Player
     float angle;
     Player() = default;
     Player(float xx, float yy, float a): x(xx), y(yy), angle(a) {};
-} player(2.0f, 2.0f, pi / 4);
+};
 
 
 #endif // PLAYER_H_INCLUDED

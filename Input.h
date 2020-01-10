@@ -7,58 +7,58 @@
 #include "player.h"
 #include "rendering.h"
 
-void destroyAWallThatPlayerIsFacing()
+void destroyAWallThatPlayerIsFacing(GameData& gamedata)
 {
     float distanceToAWall = 0.0f;
 
     Vector2D<float> test;
-    test.x = player.x;
-    test.y = player.y;
+    test.x = gamedata.player.x;
+    test.y = gamedata.player.y;
 
-    rayTraversal(player.angle, &distanceToAWall, &test);
+    rayTraversal(gamedata, gamedata.player.angle, &distanceToAWall, &test);
 
     if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
        withinRange((float)test.y, 0.0f, (float)mapHeight)) {
-            map[(int)test.y][(int)test.x].setEmpty();
+            gamedata.map[(int)test.y][(int)test.x].setEmpty();
     }
 }
 
-void createRandomColorWallNearby()
+void createRandomColorWallNearby(GameData& d)
 {
     Vector2D<int> wallLocation;
-    wallLocation.x = (int)(player.x + sinf(player.angle) * 3.0f);
-    wallLocation.y = (int)(player.y + cosf(player.angle) * 3.0f);
+    wallLocation.x = (int)(d.player.x + sinf(d.player.angle) * 3.0f);
+    wallLocation.y = (int)(d.player.y + cosf(d.player.angle) * 3.0f);
 
     wallLocation.x = clamp(wallLocation.x, 0, mapWidth);
     wallLocation.y = clamp(wallLocation.y, 0, mapHeight);
 
-    if(map[wallLocation.y][wallLocation.x].isEmpty()) {
-        map[wallLocation.y][wallLocation.x].r = rand() % 64;
-        map[wallLocation.y][wallLocation.x].g = rand() % 64;
-        map[wallLocation.y][wallLocation.x].b = rand() % 64;
+    if(d.map[wallLocation.y][wallLocation.x].isEmpty()) {
+        d.map[wallLocation.y][wallLocation.x].r = rand() % 64;
+        d.map[wallLocation.y][wallLocation.x].g = rand() % 64;
+        d.map[wallLocation.y][wallLocation.x].b = rand() % 64;
     }
 }
 
-void changeResolution(SDL_Surface** screen, const Vector2D<int> res)
+void changeResolution(SDL_Surface** screen, const Vector2D<int> res, GameData& gamedata)
 {
-    if(isFullScreen) {
+    if(controls.isFullScreen) {
         *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
     } else {
         *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
     }
-    screenWidth = res.x;
-    screenHeight = res.y;
+    Constants::screenWidth = res.x;
+    Constants::screenHeight = res.y;
 
-    horizonCap = calcHorizonCap();
+    Constants::horizonCap = Constants::calcHorizonCap();
 
-    starsWidth = calcStarsWidth();
-    starsHeight = calcStarsHeight();
+    Constants::starsWidth = Constants::calcStarsWidth();
+    Constants::starsHeight = Constants::calcStarsHeight();
 
-    FOV = calcFOV();
-    allocateScreenSizeSensitiveData();
+    Constants::FOV = Constants::calcFOV();
+    gamedata.allocateScreenSizeSensitiveData();
 }
 
-void checkControls(const SDL_Event event, SDL_Surface** screen) {
+void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gamedata) {
     static bool wasSkyColorChangePressed = false;
     static bool wasSkyIsAFloorPressed = false;
     static bool wasFullScreenTogglePressed = false;
@@ -67,42 +67,42 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
 
     switch (event.type) {
         case SDL_QUIT:
-            done = true;
+            gamedata.done = true;
             break;
 
         case SDL_KEYDOWN:
         {
             if (event.key.keysym.sym == SDLK_ESCAPE)
             {
-                done = true;
+                gamedata.done = true;
             }
             if (event.key.keysym.sym == SDLK_a)
             {
-                isLStrafeHeld = true;
+                controls.isLStrafeHeld = true;
             }
             if (event.key.keysym.sym == SDLK_d)
             {
-                isRStrafeHeld = true;
+                controls.isRStrafeHeld = true;
             }
             if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
             {
-                isDownHeld = true;
+                controls.isDownHeld = true;
             }
             if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
             {
-                isUpHeld = true;
+                controls.isUpHeld = true;
             }
             if(event.key.keysym.sym == SDLK_LEFT)
             {
-                isLeftHeld = true;
+                controls.isLeftHeld = true;
             }
             if(event.key.keysym.sym == SDLK_RIGHT)
             {
-                isRightHeld = true;
+                controls.isRightHeld = true;
             }
             if(event.key.keysym.sym == SDLK_LSHIFT)
             {
-                walkingSpeed = defWalkingSpeed * 2;
+                gamedata.walkingSpeed = Constants::defWalkingSpeed * 2;
             }
             if(event.key.keysym.sym == SDLK_PAGEUP)
             {
@@ -125,80 +125,82 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
                 skyColor.b = 0;
             }
             if(event.key.keysym.sym == SDLK_DELETE) {
-                shouldStarsBeRendered = false;
+                controls.shouldStarsBeRendered = false;
             }
             if(event.key.keysym.sym == SDLK_INSERT) {
-                shouldStarsBeRendered = true;
+                controls.shouldStarsBeRendered = true;
             }
             if(event.key.keysym.sym == SDLK_PAGEDOWN) {
                  if(!wasSkyIsAFloorPressed) {
-                    isFloorASky = !isFloorASky;
+                    controls.isFloorASky = !controls.isFloorASky;
                     wasSkyIsAFloorPressed = true;
                  }
             }
             if(event.key.keysym.sym == SDLK_F4) {
                 if(!wasFullScreenTogglePressed) {
-                    if(!isFullScreen) {
+                    if(!controls.isFullScreen) {
                         *screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
-                        isFullScreen = true;
+                        controls.isFullScreen = true;
                     } else {
                         *screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
-                        isFullScreen = false;
+                        controls.isFullScreen = false;
                     }
                 wasFullScreenTogglePressed = true;
                 }
             }
             if(event.key.keysym.sym == SDLK_c) {
-                horizonLine = 0;
+                gamedata.horizonLine = 0;
             }
             if(keyState[SDLK_F6] && keyState[SDLK_F9]) {
-                easterEgg = !easterEgg;
+                controls.easterEgg = !controls.easterEgg;
             }
             if(event.key.keysym.sym == SDLK_F12) {
-                textureGradient = !textureGradient;
+                controls.textureGradient = !controls.textureGradient;
             }
             if(event.key.keysym.sym == SDLK_F11) {
-                if(naiveApproach) {
-                    naiveApproach = false;
+                if(controls.naiveApproach) {
+                    controls.naiveApproach = false;
                     blockBitSize = nonNaiveBBS;
                     horisontalBlockCheckStep = nonNaiveBBS * 2;
                 } else {
-                    naiveApproach = true;
+                    controls.naiveApproach = true;
                     blockBitSize = naiveBlockBitSize;
                     horisontalBlockCheckStep = naiveBlockBitSize;
                 }
             }
             if(event.key.keysym.sym == SDLK_F2) {
                 currentRes = clamp(currentRes - 1, 0, resArraySize-1);
-                changeResolution(screen, resolutions[currentRes]);
+                changeResolution(screen, resolutions[currentRes], gamedata);
             }
             if(event.key.keysym.sym == SDLK_F3) {
                 currentRes = clamp(currentRes + 1, 0, resArraySize-1);
-                changeResolution(screen, resolutions[currentRes]);
+                changeResolution(screen, resolutions[currentRes], gamedata);
             }
             if(event.key.keysym.sym == SDLK_F5) {
-                if(!vSync) {
+                if(!controls.vSync) {
                     targetFPS = 60;
-                    vSync = true;
+                    controls.vSync = true;
+                    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
                 } else {
                     targetFPS = 1000;
-                    vSync = false;
+                    controls.vSync = false;
+                    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
                 }
             }
             if(event.key.keysym.sym == SDLK_F10) {
-                night = !night;
+                controls.night = !controls.night;
             }
             if(event.key.keysym.sym == SDLK_F9) {
-                texturedSky = !texturedSky;
+                controls.texturedSky = !controls.texturedSky;
             }
             if(event.key.keysym.sym == SDLK_F6) {
-                multithreaded = !multithreaded;
+                controls.multithreaded = !controls.multithreaded;
             }
             if(event.key.keysym.sym == SDLK_F7) {
-                fog = !fog;
+                controls.fog = !controls.fog;
             }
             if(event.key.keysym.sym == SDLK_F8) {
-                coloredLight = !coloredLight;
+                controls.coloredLight = !controls.coloredLight;
             }
             break;
         }
@@ -206,31 +208,31 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
         {
             if (event.key.keysym.sym == SDLK_a)
             {
-                isLStrafeHeld = false;
+                controls.isLStrafeHeld = false;
             }
             if (event.key.keysym.sym == SDLK_d)
             {
-                isRStrafeHeld = false;
+                controls.isRStrafeHeld = false;
             }
             if (event.key.keysym.sym == SDLK_s || event.key.keysym.sym == SDLK_DOWN)
             {
-                isDownHeld = false;
+                controls.isDownHeld = false;
             }
             if(event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_UP)
             {
-                isUpHeld = false;
+                controls.isUpHeld = false;
             }
             if(event.key.keysym.sym == SDLK_LEFT)
             {
-                isLeftHeld = false;
+                controls.isLeftHeld = false;
             }
             if(event.key.keysym.sym == SDLK_RIGHT)
             {
-                isRightHeld = false;
+                controls.isRightHeld = false;
             }
             if(event.key.keysym.sym == SDLK_LSHIFT)
             {
-                walkingSpeed = defWalkingSpeed;
+                gamedata.walkingSpeed = defWalkingSpeed;
             }
             if(event.key.keysym.sym == SDLK_PAGEUP)
             {
@@ -245,16 +247,16 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
             break;
         }
         case SDL_MOUSEMOTION:
-            player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
-            horizonLine += (screenHeight / 2 - event.motion.y) * ((float)screenHeight / 400);
-            horizonLine = clamp(horizonLine, -horizonCap, horizonCap);
+            gamedata.player.angle -= rotatingSpeed * (float)(screenWidth / 2 - event.motion.x) / mouseSensitivity;
+            gamedata.horizonLine += (screenHeight / 2 - event.motion.y) * ((float)screenHeight / 400);
+            gamedata.horizonLine = clamp(gamedata.horizonLine, -horizonCap, horizonCap);
             break;
         case SDL_MOUSEBUTTONDOWN:
             if(event.button.button == SDL_BUTTON_LEFT) {
-                destroyAWallThatPlayerIsFacing();
+                destroyAWallThatPlayerIsFacing(gamedata);
             }
             if(event.button.button == SDL_BUTTON_RIGHT) {
-                createRandomColorWallNearby();
+                createRandomColorWallNearby(gamedata);
             }
             if(event.button.button == SDL_BUTTON_WHEELDOWN) {
                 FOV -= 0.05f;
@@ -269,51 +271,71 @@ void checkControls(const SDL_Event event, SDL_Surface** screen) {
 }
 
 
-void doActions(const int frameTime) {
-    if(isUpHeld) {
-        player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.x < 0.0f || player.x > mapWidth)  {
-            player.x -= sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+void doActions(const int frameTime, GameData& gamedata, ControlState ctrls = controls) {
+    Player& player = gamedata.player;
+    float walkingSpeed = gamedata.walkingSpeed;
+    float action;
+
+    if(ctrls.isUpHeld) {
+        action = sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        player.x += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.x, 0.0f, (float)Constants::mapWidth))  {
+            player.x -= action;
         }
-        player.y += cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.y < 0.0f || player.y > mapHeight)  {
-            player.y -= cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        }
-    }
-    if(isDownHeld) {
-        player.x -= sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.x < 0.0f || player.x > mapWidth)  {
-            player.x += sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        }
-        player.y -= cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.y < 0.0f || player.y > mapHeight)  {
-            player.y += cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        action = cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        player.y += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.y, 0.0f, (float)Constants::mapHeight))  {
+            player.y -= action;
         }
     }
-    if(isLeftHeld) {
+    if(ctrls.isDownHeld) {
+        action = -sinf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        player.x += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.x, 0.0f, (float)Constants::mapWidth))  {
+            player.x -= action;
+        }
+        action = -cosf(player.angle) * walkingSpeed * (frameTime / targetSpeed);
+        player.y += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.y, 0.0f, (float)Constants::mapHeight))  {
+            player.y -= action;
+        }
+    }
+    if(ctrls.isLeftHeld) {
         player.angle -= rotatingSpeed  * (frameTime / targetSpeed);
     }
-    if(isRightHeld) {
+    if(ctrls.isRightHeld) {
         player.angle += rotatingSpeed  * (frameTime / targetSpeed);
     }
-    if(isLStrafeHeld) {
-        player.x -= sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.x < 0.0f || player.x > mapWidth)  {
-            player.x += sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+    if(ctrls.isLStrafeHeld) {
+        action = -sinf(player.angle + pi / 2) * walkingSpeed * (frameTime / targetSpeed);
+        player.x += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.x, 0.0f, (float)Constants::mapWidth))  {
+            player.x -= action;
         }
-        player.y -= cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.y < 0.0f || player.y > mapHeight)  {
-            player.y += cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+        action = -cosf(player.angle + pi / 2) * walkingSpeed * (frameTime / targetSpeed);
+        player.y += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.y, 0.0f, (float)Constants::mapHeight))  {
+            player.y -= action;
         }
     }
-    if(isRStrafeHeld) {
-        player.x += sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.x < 0.0f || player.x > mapWidth)  {
-            player.x -= sinf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+    if(ctrls.isRStrafeHeld) {
+        action = sinf(player.angle + pi / 2) * walkingSpeed * (frameTime / targetSpeed);
+        player.x += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.x, 0.0f, (float)Constants::mapWidth))  {
+            player.x -= action;
         }
-        player.y += cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
-        if(!map[(int)player.y][(int)player.x].isEmpty() || player.y < 0.0f || player.y > mapHeight)  {
-            player.y -= cosf(player.angle + pi / 2) * walkingSpeed  * (frameTime / targetSpeed);
+        action = cosf(player.angle + pi / 2) * walkingSpeed * (frameTime / targetSpeed);
+        player.y += action;
+        if(!gamedata.map[(int)player.y][(int)player.x].isEmpty() ||
+           !withinRange(player.y, 0.0f, (float)Constants::mapHeight))  {
+            player.y -= action;
         }
     }
 }
