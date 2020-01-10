@@ -50,7 +50,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
 
     int ceilingHeight = 0;
 
-    if(!controls.easterEgg) {
+    if(!ctrls.easterEgg) {
         ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall);
     } else {
         ceilingHeight = (float)(screenHeight / 2.0) - screenHeight / ((float)distanceToAWall) + abs(j  - screenWidth / 2);
@@ -126,13 +126,13 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     }
 
 
-    if(controls.texturedSky) {
+    if(ctrls.texturedSky) {
         skyLightColor = *getTransposedTexturePixel(gamedata.sky_textures[0], 1907, 604);
     } else {
         skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
     }
 
-    if(controls.night) {
+    if(ctrls.night) {
         fogColor = nightFogColor;
     } else {
         fogColor = dayFogColor;
@@ -157,7 +157,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
                                       Constants::starsWidth, Constants::starsHeight,
                                       i + (horizonCap - gamedata.horizonLine), skyTextureIndex);
                 }
-                if(controls.fog) {
+                if(ctrls.fog) {
                     pixelColor = blend(pixelColor, fogColor,
                                  clamp((i + (Constants::horizonCap - gamedata.horizonLine)) /
                                  (starsHeight / 1024), 0, 255));
