@@ -9,6 +9,7 @@
 
 void destroyAWallThatPlayerIsFacing(GameData& gamedata)
 {
+    using namespace Constants;
     float distanceToAWall = 0.0f;
 
     Vector2D<float> test;
@@ -25,6 +26,7 @@ void destroyAWallThatPlayerIsFacing(GameData& gamedata)
 
 void createRandomColorWallNearby(GameData& d)
 {
+    using namespace Constants;
     Vector2D<int> wallLocation;
     wallLocation.x = (int)(d.player.x + sinf(d.player.angle) * 3.0f);
     wallLocation.y = (int)(d.player.y + cosf(d.player.angle) * 3.0f);
@@ -41,24 +43,26 @@ void createRandomColorWallNearby(GameData& d)
 
 void changeResolution(SDL_Surface** screen, const Vector2D<int> res, GameData& gamedata)
 {
+    using namespace Constants;
     if(controls.isFullScreen) {
         *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE | SDL_FULLSCREEN);
     } else {
         *screen = SDL_SetVideoMode(res.x, res.y, screenBits, SDL_DOUBLEBUF | SDL_HWSURFACE);
     }
-    Constants::screenWidth = res.x;
-    Constants::screenHeight = res.y;
+    screenWidth = res.x;
+    screenHeight = res.y;
 
-    Constants::horizonCap = Constants::calcHorizonCap();
+    horizonCap = calcHorizonCap();
 
-    Constants::starsWidth = Constants::calcStarsWidth();
-    Constants::starsHeight = Constants::calcStarsHeight();
+    starsWidth = calcStarsWidth();
+    starsHeight = calcStarsHeight();
 
-    Constants::FOV = Constants::calcFOV();
+    FOV = calcFOV();
     gamedata.allocateScreenSizeSensitiveData();
 }
 
 void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gamedata) {
+    using namespace Constants;
     static bool wasSkyColorChangePressed = false;
     static bool wasSkyIsAFloorPressed = false;
     static bool wasFullScreenTogglePressed = false;
@@ -102,7 +106,7 @@ void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gameda
             }
             if(event.key.keysym.sym == SDLK_LSHIFT)
             {
-                gamedata.walkingSpeed = Constants::defWalkingSpeed * 2;
+                gamedata.walkingSpeed = defWalkingSpeed * 2;
             }
             if(event.key.keysym.sym == SDLK_PAGEUP)
             {
@@ -272,6 +276,7 @@ void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gameda
 
 
 void doActions(const int frameTime, GameData& gamedata, ControlState ctrls = controls) {
+    using namespace Constants;
     Player& player = gamedata.player;
     float walkingSpeed = gamedata.walkingSpeed;
     float action;

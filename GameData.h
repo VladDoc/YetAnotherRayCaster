@@ -10,87 +10,87 @@
 #include "MapBlock.h"
 #include "Sprite.h"
 
-using namespace Constants;
-
 struct GameData {
-float walkingSpeed = 0.2f;
+    float walkingSpeed = 0.2f;
 
-int horizonLine = 0; // 0 is default it means that horizon won't be changed
+    int horizonLine = 0; // 0 is default it means that horizon won't be changed
 
-bool done = false;
+    bool done = false;
 
-std::vector<SDL_Surface*> textures;
-std::vector<SDL_Surface*> lightmaps;
+    std::vector<SDL_Surface*> textures;
+    std::vector<SDL_Surface*> lightmaps;
 
-// m_ stands for mirrored
-std::vector<SDL_Surface*> m_textures;
-std::vector<SDL_Surface*> m_lightmaps;
+    // m_ stands for mirrored
+    std::vector<SDL_Surface*> m_textures;
+    std::vector<SDL_Surface*> m_lightmaps;
 
-std::vector<SDL_Surface*> sky_textures;
+    std::vector<SDL_Surface*> sky_textures;
 
-std::vector<Sprite> hudSprites;
+    std::vector<Sprite> hudSprites;
 
-MapBlock map[mapHeight][mapWidth] =
-{
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {2,1}},
-    {3, 0, 0, 0, 0, 0, 0, 0, {0, 0, 50}, {0, 0, 50}, {20, 0, 50}, {20, 0, 50}, {20, 0, 50}, {20, 0, 50}, 0, 1},
-    {3, 0, 0, 4, 0, 0, 0, 0, {50, 0, 0}, {50, 0, 0}, {50, 0, 0}, {50, 0, 0}, {50, 0, 0}, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {6, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-    {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-};
+    MapBlock map[Constants::mapHeight][Constants::mapWidth] =
+    {
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {2,1}},
+        {3, 0, 0, 0, 0, 0, 0, 0, {0, 0, 50}, {0, 0, 50}, {20, 0, 50}, {20, 0, 50}, {20, 0, 50}, {20, 0, 50}, 0, 1},
+        {3, 0, 0, 4, 0, 0, 0, 0, {50, 0, 0}, {50, 0, 0}, {50, 0, 0}, {50, 0, 0}, {50, 0, 0}, 0, 0, 1},
+        {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {6, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+    };
 
 
-Uint8* stars;
+    Uint8* stars;
 
-float* distances;
-float* rays;
-Vector2D<float>* rayPositions;
+    float* distances;
+    float* rays;
+    Vector2D<float>* rayPositions;
 
-FILE* logFile;
+    FILE* logFile;
 
-void fillUpTheStars() {
-    std::mt19937 r;
-    r.seed(1);
-    stars = (Uint8*)realloc(stars, starsWidth * starsHeight * sizeof(*stars));
-    memset(stars, 0, starsWidth * starsHeight);
+    void fillUpTheStars() {
+        using namespace Constants;
+        std::mt19937 r;
+        r.seed(1);
+        stars = (Uint8*)realloc(stars, starsWidth * starsHeight * sizeof(*stars));
+        memset(stars, 0, starsWidth * Constants::starsHeight);
 
-    for(int i = 0; i < starsHeight; ++i) {
-        for(int j = 0; j < starsWidth; ++j) {
-            if(!(r() % screenWidth / 2)) {
-                stars[i * starsWidth + j] = r() & 0xFF;
+        for(int i = 0; i < starsHeight; ++i) {
+            for(int j = 0; j < starsWidth; ++j) {
+                if(!(r() % screenWidth / 2)) {
+                    stars[i * starsWidth + j] = r() & 0xFF;
+                }
             }
         }
     }
-}
 
-void allocateScreenSizeSensitiveData()
-{
-    distances = (float*) realloc(distances, sizeof(float) * screenWidth);
-    rayPositions = (Vector2D<float>*) realloc(rayPositions, sizeof(Vector2D<float>) * screenWidth);
-    rays =  (float*) realloc(rays, sizeof(float) * screenWidth);
-    fillUpTheStars();
-}
+    void allocateScreenSizeSensitiveData()
+    {
+        using namespace Constants;
+        distances = (float*) realloc(distances, sizeof(float) * screenWidth);
+        rayPositions = (Vector2D<float>*) realloc(rayPositions, sizeof(Vector2D<float>) * screenWidth);
+        rays =  (float*) realloc(rays, sizeof(float) * screenWidth);
+        fillUpTheStars();
+    }
 
-void freeScreenSizeSensitiveData()
-{
-    free(distances);
-    free(rayPositions);
-    free(rays);
-    free(stars);
-}
+    void freeScreenSizeSensitiveData()
+    {
+        free(distances);
+        free(rayPositions);
+        free(rays);
+        free(stars);
+    }
 
-Player player{2.0f, 2.0f, pi / 4};
+    Player player{2.0f, 2.0f, Constants::pi / 4};
 
 };
 

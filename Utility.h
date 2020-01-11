@@ -111,7 +111,7 @@ SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColo
 #include "Vector2D.h"
 
 float degreesToRad(float degrees) {
-    return degrees * (pi / 180);
+    return degrees * (Constants::pi / 180);
 }
 
 float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray, float sine, float cosine)
@@ -126,16 +126,16 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
      *          which quadrant of circle player currently is.
      *
      */
+     using namespace Constants;
     if(!controls.naiveApproach) {
 
-        float bufferRay = clampLooping(ray, 0.0f, pi * 2);
 
         Vector2D<float> distance;
         Vector2D<float> delta;
         Vector2D<float> scaleCoeffs;
 
 
-        int whichQuarter = (int)(bufferRay / (pi / 2));
+        int whichQuarter = (int)(ray / (pi / 2));
 
         switch(whichQuarter) {
             case 0:
@@ -217,6 +217,7 @@ Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
 
 void fillUpTheMapToBeBox(MapBlock** aMap)
 {
+    using namespace Constants;
     for(int i = 0; i < mapWidth; ++i)
     {
         aMap[0][i].setDefault();
@@ -286,6 +287,7 @@ void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
                               std::vector<SDL_Surface*>& lmp,
                               GameData& d)
 {
+    using namespace Constants;
     for(int i = 0; i < mapHeight; ++i) {
         for(int j = 0; j < mapWidth; ++j) {
             if(d.map[i][j].getIsLightMapped() && d.map[i][j].getIsTextured()) {
@@ -298,6 +300,7 @@ void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
 
 void setLightMapsTo0(GameData& d)
 {
+    using namespace Constants;
     for(int i = 0; i < mapHeight; ++i) {
         for(int j = 0; j < mapWidth; ++j) {
             d.map[i][j].lightmap = 0;
