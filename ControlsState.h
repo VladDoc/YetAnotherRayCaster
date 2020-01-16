@@ -27,6 +27,4 @@ struct ControlState
 
     bool logging = false;
 };
-
-ControlState controls;
 #endif // CONTROLSSTATE_H_INCLUDED

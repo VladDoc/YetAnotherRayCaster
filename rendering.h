@@ -34,7 +34,8 @@ struct RenderData
     bool isHorisontal;
 };
 
-void rayTraversal(GameData& gamedata, float ray, float* distArray, Vector2D<float>* rayPosArray, int j = 0)
+void rayTraversal(GameData& gamedata, float ray, float* distArray,
+                 Vector2D<float>* rayPosArray, ControlState& ctrls, int j = 0)
 {
         using namespace Constants;
         float distanceToAWall = 0.0f;
@@ -54,8 +55,11 @@ void rayTraversal(GameData& gamedata, float ray, float* distArray, Vector2D<floa
 
         while(!wasWallHit) // Ray traversal
         {
-            distanceToAWall += getDistanceToTheNearestIntersection(test, ray, eye.x, eye.y);
-
+            if(!ctrls.naiveApproach) {
+                distanceToAWall += getDistanceToTheNearestIntersection(test, ray, eye.x, eye.y);
+            } else {
+                distanceToAWall += naiveBlockBitSize;
+            }
             test.x = gamedata.player.x + eye.x * distanceToAWall;
             test.y = gamedata.player.y + eye.y * distanceToAWall;
 
@@ -155,7 +159,7 @@ Uint32 noise(Uint32 color)
     return blend(color, greyscale[dist(random) & 3], 32);
 }
 
-inline Uint32 doFloorFog(Uint32 source, Uint32 fogColor, int i, GameData& data)
+inline Uint32 doFloorFog(Uint32 source, Uint32 fogColor, int i, const GameData& data)
 {
     using namespace Constants;
     Uint8 alpha = clamp((starsHeight -
@@ -164,7 +168,7 @@ inline Uint32 doFloorFog(Uint32 source, Uint32 fogColor, int i, GameData& data)
     return blend(source, fogColor, alpha);
 }
 
-inline Uint32 doCeilingFog(Uint32 source, Uint32 fogColor, int i, GameData& data)
+inline Uint32 doCeilingFog(Uint32 source, Uint32 fogColor, int i, const GameData& data)
 {
     using namespace Constants;
     Uint8 alpha = clamp((i + (Constants::horizonCap - data.horizonLine)) /
@@ -172,8 +176,8 @@ inline Uint32 doCeilingFog(Uint32 source, Uint32 fogColor, int i, GameData& data
     return blend(source, fogColor, alpha);
 }
 
-inline Uint32 renderCeiling(ControlState& ctrls, GameData& gamedata,
-                            RenderData& r_data, int i)
+inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
+                            const RenderData& r_data, int i)
 {
     using namespace Constants;
     Uint32 pixelColor;
@@ -197,7 +201,7 @@ inline Uint32 renderCeiling(ControlState& ctrls, GameData& gamedata,
     return pixelColor;
 }
 
-inline renderFloor(ControlState ctrls, GameData& gamedata, RenderData& r_data, int i)
+inline Uint32 renderFloor(const ControlState& ctrls, const GameData& gamedata, const RenderData& r_data, int i)
 {
     using namespace Constants;
     Uint32 pixelColor;
@@ -232,7 +236,7 @@ inline renderFloor(ControlState ctrls, GameData& gamedata, RenderData& r_data, i
     return pixelColor;
 }
 
-inline Uint32 renderWall(ControlState& ctrls, GameData& gamedata, RenderData& r_data, int i)
+inline Uint32 renderWall(const ControlState& ctrls, const GameData& gamedata, const RenderData& r_data, int i)
 {
     using namespace Constants;
     Uint32 pixelColor;
@@ -284,7 +288,7 @@ inline Uint32 renderWall(ControlState& ctrls, GameData& gamedata, RenderData& r_
 
     if(ctrls.fog) {
         pixelColor = blend(pixelColor, r_data.fogColor,
-                     clamp((Uint8)(r_data.distanceToAWall * 12), (Uint8)0, (Uint8)255));
+                     (Uint8)clamp(r_data.distanceToAWall * 12, 0.0f, 255.0f));
     }
 
     if(ctrls.coloredLight) pixelColor = blend(pixelColor, r_data.skyLightColor, 92);

@@ -3,6 +3,8 @@
 #ifndef MAPBLOCK_H_INCLUDED
 #define MAPBLOCK_H_INCLUDED
 
+#include <ostream>
+
 class MapBlock
 {
 public:
@@ -13,6 +15,31 @@ public:
     Uint16 texture{};
     Uint16 lightmap{};
     float height = 1.0f;
+
+    MapBlock(): r(0), g(0), b(0), texture(0), lightmap(0), height(1.0f) {}
+
+    MapBlock& operator=(const MapBlock& m)
+    {
+        r = m.r;
+        g = m.g;
+        b = m.b;
+        texture = m.texture;
+        lightmap = m.lightmap;
+        height = m.height;
+
+        return *this;
+    }
+
+    MapBlock(const MapBlock& m)
+    {
+        r = m.r;
+        g = m.g;
+        b = m.b;
+        texture = m.texture;
+        lightmap = m.lightmap;
+        height = m.height;
+    }
+    ~MapBlock() {}
 
     MapBlock(int red, int green, int blue) :
         r((Uint8)red), g((Uint8)green), b((Uint8)blue), texture(0), lightmap(0) { }
@@ -62,12 +89,12 @@ public:
         return (int)(lightmap)-1;
     }
 
-    inline bool isDefault()
+    inline bool isDefault() const
     {
         return !(r || g || b || lightmap) && texture == 1;
     }
 
-    SDL_Color getColor(){
+    SDL_Color getColor() const {
         if(isDefault()) {
             return defWallColor;
         }
@@ -78,9 +105,18 @@ public:
         return retColor;
     }
 
-    inline bool isEmpty() {
+    inline bool isEmpty() const {
         return !(r || g || b || texture);
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const MapBlock& mb);
 };
+
+std::ostream& operator<<(std::ostream& os, const MapBlock& mb)
+{
+    if(!mb.isEmpty()) os << "0";
+    else os << " ";
+    return os;
+}
 
 #endif // MAPBLOCK_H_INCLUDED

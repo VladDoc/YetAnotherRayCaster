@@ -7,7 +7,7 @@
 #include "player.h"
 #include "rendering.h"
 
-void destroyAWallThatPlayerIsFacing(GameData& gamedata)
+void destroyAWallThatPlayerIsFacing(GameData& gamedata, ControlState& ctrls)
 {
     using namespace Constants;
     float distanceToAWall = 0.0f;
@@ -16,7 +16,7 @@ void destroyAWallThatPlayerIsFacing(GameData& gamedata)
     test.x = gamedata.player.x;
     test.y = gamedata.player.y;
 
-    rayTraversal(gamedata, gamedata.player.angle, &distanceToAWall, &test);
+    rayTraversal(gamedata, gamedata.player.angle, &distanceToAWall, &test, ctrls);
 
     if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
        withinRange((float)test.y, 0.0f, (float)mapHeight)) {
@@ -41,7 +41,8 @@ void createRandomColorWallNearby(GameData& d)
     }
 }
 
-void changeResolution(SDL_Surface** screen, const Vector2D<int> res, GameData& gamedata)
+void changeResolution(SDL_Surface** screen, const Vector2D<int> res,
+                       GameData& gamedata, ControlState& controls)
 {
     using namespace Constants;
     if(controls.isFullScreen) {
@@ -61,7 +62,9 @@ void changeResolution(SDL_Surface** screen, const Vector2D<int> res, GameData& g
     gamedata.allocateScreenSizeSensitiveData();
 }
 
-void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gamedata) {
+void checkControls(const SDL_Event event, SDL_Surface** screen,
+                   GameData& gamedata, ControlState& controls)
+{
     using namespace Constants;
     static bool wasSkyColorChangePressed = false;
     static bool wasSkyIsAFloorPressed = false;
@@ -174,11 +177,11 @@ void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gameda
             }
             if(event.key.keysym.sym == SDLK_F2) {
                 currentRes = clamp(currentRes - 1, 0, resArraySize-1);
-                changeResolution(screen, resolutions[currentRes], gamedata);
+                changeResolution(screen, resolutions[currentRes], gamedata, controls);
             }
             if(event.key.keysym.sym == SDLK_F3) {
                 currentRes = clamp(currentRes + 1, 0, resArraySize-1);
-                changeResolution(screen, resolutions[currentRes], gamedata);
+                changeResolution(screen, resolutions[currentRes], gamedata, controls);
             }
             if(event.key.keysym.sym == SDLK_F5) {
                 if(!controls.vSync) {
@@ -257,25 +260,25 @@ void checkControls(const SDL_Event event, SDL_Surface** screen, GameData& gameda
             break;
         case SDL_MOUSEBUTTONDOWN:
             if(event.button.button == SDL_BUTTON_LEFT) {
-                destroyAWallThatPlayerIsFacing(gamedata);
+                destroyAWallThatPlayerIsFacing(gamedata, controls);
             }
             if(event.button.button == SDL_BUTTON_RIGHT) {
                 createRandomColorWallNearby(gamedata);
             }
             if(event.button.button == SDL_BUTTON_WHEELDOWN) {
                 FOV -= 0.05f;
-                FOV = clamp(FOV, pi / 8, pi);
+                FOV = clamp(FOV, pi / 8, pi - 0.01f);
             }
             if(event.button.button == SDL_BUTTON_WHEELUP) {
                 FOV += 0.05f;
-                FOV = clamp(FOV, pi / 8, pi);
+                FOV = clamp(FOV, pi / 8, pi - 0.01f);
             }
         }
         SDL_WarpMouse(screenWidth / 2, screenHeight / 2);
 }
 
 
-void doActions(const int frameTime, GameData& gamedata, ControlState ctrls = controls) {
+void doActions(const int frameTime, GameData& gamedata, ControlState& ctrls) {
     using namespace Constants;
     Player& player = gamedata.player;
     float walkingSpeed = gamedata.walkingSpeed;

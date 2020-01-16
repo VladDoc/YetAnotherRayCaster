@@ -4,6 +4,7 @@
 #define GAMEDATA_H_INCLUDED
 
 #include <vector>
+#include <fstream>
 
 #include "GameConstants.h"
 #include "player.h"
@@ -28,7 +29,7 @@ struct GameData {
 
     std::vector<Sprite> hudSprites;
 
-    MapBlock map[Constants::mapHeight][Constants::mapWidth] =
+    std::vector<std::vector<MapBlock>> map =
     {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
         {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5},
@@ -49,20 +50,18 @@ struct GameData {
     };
 
 
-    Uint8* stars;
+    Uint8* stars{};
 
-    float* distances;
-    float* rays;
-    Vector2D<float>* rayPositions;
-
-    FILE* logFile;
+    float* distances{};
+    float* rays{};
+    Vector2D<float>* rayPositions{};
 
     void fillUpTheStars() {
         using namespace Constants;
         std::mt19937 r;
         r.seed(1);
         stars = (Uint8*)realloc(stars, starsWidth * starsHeight * sizeof(*stars));
-        memset(stars, 0, starsWidth * Constants::starsHeight);
+        memset(stars, 0, starsWidth * starsHeight);
 
         for(int i = 0; i < starsHeight; ++i) {
             for(int j = 0; j < starsWidth; ++j) {
@@ -92,9 +91,44 @@ struct GameData {
 
     Player player{2.0f, 2.0f, Constants::pi / 4};
 
-};
+    Vector2D<float> destination{};
 
-GameData data;
+    void initMapFromFile(const char* filename)
+    {
+        std::ifstream in(filename);
+        if(!in.good()) return;
+
+        map.clear(); // Map is vector<vector<MapBlock>>
+
+        std::string line{};
+
+        size_t i = 0;
+        MapBlock def{2};
+        MapBlock empty{0};
+        while(std::getline(in, line) && !in.eof()) {
+            map.push_back(std::vector<MapBlock>{});
+            map[i].resize(line.size());
+            for(size_t j = 0; j < line.size(); ++j) {
+                char buf = line[j];
+                if(buf == '0') map[i][j] = def;
+                if(buf == ' ') map[i][j] = empty;
+                if(buf == 'I') {
+                    player.x = j;
+                    player.y = i;
+                    map[i][j]= empty;
+                }
+                if(buf == 'E') {
+                    destination.x = j;
+                    destination.y = i;
+                    map[i][j] = {100, 0, 0};
+                }
+            }
+            ++i;
+        }
+        Constants::mapWidth = map[0].size();
+        Constants::mapHeight = map.size();
+    }
+};
 
 thread_local std::mt19937 random;
 thread_local std::uniform_int_distribution<int> dist{0, 255};

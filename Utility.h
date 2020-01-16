@@ -3,8 +3,10 @@
 #ifndef UTILITY_H_INCLUDED
 #define UTILITY_H_INCLUDED
 
+#include <iostream>
 #include <vector>
 #include <random>
+#include <ostream>
 
 template <typename T>
 inline T clamp(T value, T min, T max) {
@@ -18,7 +20,17 @@ inline T clamp(T value, T min, T max) {
     return value;
 }
 
-
+template<typename T>
+void print2dVector(std::vector<std::vector<T>>& vec, std::ostream& where)
+{
+    if(vec.empty() || vec[0].empty()) return;
+    for(size_t i = 0; i < vec.size(); ++i) {
+        for(size_t j = 0; j < vec[0].size(); ++j) {
+            where << vec[i][j] << " ";
+        }
+        where << std::endl;
+    }
+}
 // Works only for positive min and max
 inline float clampLooping(float value, float min, float max) {
     int howManyTimesMax = value / max;
@@ -54,7 +66,6 @@ float getFractialPart(float arg)
     int wholePart = (int)arg;
     return arg - wholePart;
 }
-
 
 float fractionBetweenNumbers(float arg, float min, float max)
 {
@@ -114,6 +125,13 @@ float degreesToRad(float degrees) {
     return degrees * (Constants::pi / 180);
 }
 
+float angleBetweenPoints(Vector2D<float> a, Vector2D<float> b)
+{
+    float deltaY = std::abs(b.y - a.y);
+    float deltaX = std::abs(b.x - a.x);
+    return std::atan2(deltaY, deltaX);
+}
+
 float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray, float sine, float cosine)
 {
 
@@ -127,7 +145,6 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
      *
      */
      using namespace Constants;
-    if(!controls.naiveApproach) {
 
 
         Vector2D<float> distance;
@@ -162,6 +179,9 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
                 delta.y = 1.0f - getFractialPart(test.y); // without constant ray overshoots walls by x axis
                 scaleCoeffs.y = cosine;
             break;
+            default:
+                return naiveBlockBitSize;
+            break;
         }
 
          // Delta should not be zero otherwise renderer will loop forever.
@@ -178,10 +198,6 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
         distance.y = delta.y / scaleCoeffs.y;
 
         return distance.x < distance.y ? distance.x : distance.y;
-
-    } else {
-        return blockBitSize;
-    }
 }
 
 void loadTextures(std::vector<SDL_Surface*>& txt) {

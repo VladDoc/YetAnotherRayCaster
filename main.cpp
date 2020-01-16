@@ -1,6 +1,8 @@
 #include <cstdlib>
 
+
 #include <iostream>
+#include <fstream>
 #include <ctime>
 #include <cmath>
 #include <cstdio>
@@ -8,6 +10,8 @@
 
 #include <SDL/SDL.h>
 
+#include "a_star.h"
+#include "LuaScript.h"
 #include "MapBlock.h"
 #include "ControlsState.h"
 #include "Utility.h"
@@ -37,7 +41,8 @@ void freeTextures(GameData& gamedata) {
 }
 
 void renderColumn(float ray, const int j, SDL_Surface* screen,
-                  Vector2D<float>& test, float distanceToAWall, GameData& gamedata, ControlState ctrls = controls)
+                  Vector2D<float>& test, float distanceToAWall,
+                  const GameData& gamedata, const ControlState& ctrls)
 {
     using namespace Constants;
 
@@ -50,6 +55,8 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     }
 
     RenderData r_data;
+
+    r_data.distanceToAWall = distanceToAWall;
 
     r_data.floorColor = Constants::floorColor;
     r_data.skyColor = Constants::skyColor;
@@ -138,7 +145,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     }
 
     if(ctrls.night) {
-        r_data.fogColor = nightFogColor;
+        r_data.fogColor = fastPixelShadowing(r_data.skyLightColor);
     } else {
         r_data.fogColor = dayFogColor;
     }
@@ -164,28 +171,109 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     }
 }
 
-void calculateDistances(float* inRays, int from, int to, GameData* gamedata)
+void calculateDistances(float* inRays, int from, int to, GameData* gamedata, ControlState* ctrls)
 {
     for(int j = from; j < to; ++j)
     {
-        rayTraversal(*gamedata, inRays[j], gamedata->distances, gamedata->rayPositions, j);
+        rayTraversal(*gamedata, inRays[j], gamedata->distances, gamedata->rayPositions, *ctrls, j);
     }
 }
 
-void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int threadId, GameData* gamedata)
+void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int threadId,
+                   const GameData* gamedata, const ControlState* ctrls)
 {
     random.seed(threadId);
     for(int j = from; j < to; ++j)
     {
-        renderColumn(inRays[j], j, screen, gamedata->rayPositions[j], gamedata->distances[j], *gamedata);
+        renderColumn(inRays[j], j, screen, gamedata->rayPositions[j],
+                      gamedata->distances[j], *gamedata, *ctrls);
     }
 }
 
 
+std::stack<Pair> findPath(Vector2D<int>& src, Vector2D<int>& dest, GameData& data)
+{
+    std::vector<std::vector<int>> grid(Constants::mapHeight,
+                                    std::vector<int>(Constants::mapWidth, 0));
+    for(int i = 0; i < Constants::mapHeight; ++i) {
+        for(int j = 0; j < Constants::mapWidth; ++j) {
+            grid[i][j] = !data.map[i][j].isEmpty();
+        }
+    }
+
+    return aStarSearch(grid, std::make_pair(src.y, src.x), std::make_pair(src.y, src.x));
+}
+
+void readConfig(GameData& data, ControlState& ctrls)
+{
+    using namespace Constants;
+    LuaScript script("conf.lua");
+    if(!script) return; // Then defaults will be loaded.
+    std::string filename = script.get<std::string>("config.map");
+
+    data.initMapFromFile(filename.c_str());
+
+    //data.player.x = script.get<float>("config.player.X") + 1;
+    //data.player.y = script.get<float>("config.player.Y") + 1;
+
+    screenWidth = script.get<int>("config.screenWidth");
+    screenHeight = script.get<int>("config.screenHeight");
+    screenBits = script.get<int>("config.screenBits");
+
+    defWalkingSpeed = script.get<float>("config.walkingSpeed");
+    rotatingSpeed = script.get<float>("config.rotatingSpeed");
+    targetSpeed = script.get<float>("config.targetSpeed");
+
+    targetFPS = script.get<int>("config.targetFPS");
+
+    mouseSensitivity = script.get<float>("config.mouseSensitivity");
+    skyColor = SDL_Color{
+        script.get<int>("config.skyColor.R"),
+        script.get<int>("config.skyColor.G"),
+        script.get<int>("config.skyColor.B"),
+        255
+    };
+
+    floorColor = SDL_Color{
+        script.get<int>("config.floorColor.R"),
+        script.get<int>("config.floorColor.G"),
+        script.get<int>("config.floorColor.B"),
+        255
+    };
+
+    dayFogColor = ColorToUint(
+        script.get<int>("config.dayFogColor.R"),
+        script.get<int>("config.dayFogColor.G"),
+        script.get<int>("config.dayFogColor.B")
+    );
+
+    nightFogColor = ColorToUint(
+        script.get<int>("config.nightFogColor.R"),
+        script.get<int>("config.nightFogColor.G"),
+        script.get<int>("config.nightFogColor.B")
+    );
+
+    ctrls.multithreaded = script.get<bool>("config.multithreaded");
+    ctrls.fog = script.get<bool>("config.fog");
+    ctrls.coloredLight = script.get<bool>("config.coloredLight");
+    ctrls.naiveApproach = script.get<bool>("config.naiveApproach");
+    ctrls.isFullScreen = script.get<bool>("config.isFullScreen");
+    ctrls.vSync = script.get<bool>("config.vSync");
+    ctrls.night = script.get<bool>("config.night");
+    ctrls.texturedSky = script.get<bool>("config.texturedSky");
+    ctrls.shouldStarsBeRendered = script.get<bool>("config.shouldStarsBeRendered");
+    ctrls.isFloorASky = script.get<bool>("config.isFloorASky");
+    ctrls.textureGradient = script.get<bool>("config.textureGradient");
+}
+
 int main(int argc, char** argv)
 {
     using namespace Constants;
-    data.logFile = fopen("log.txt", "w");
+    GameData data;
+    ControlState controls;
+
+    readConfig(data, controls);
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
@@ -196,15 +284,18 @@ int main(int argc, char** argv)
 
     setWindowPos(8, 30);
 
+
+    Uint32 fullscreen = controls.isFullScreen ? SDL_FULLSCREEN : 0x0;
+
     SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
-                                           SDL_HWSURFACE | SDL_DOUBLEBUF);
+                                           SDL_HWSURFACE | SDL_DOUBLEBUF | fullscreen);
 
     if (!screen)
     {
-        printf("Unable to set %dx%dx%d video mode: %s\n", screenWidth, screenHeight, screenBits, SDL_GetError());
+        printf("Unable to set %dx%dx%d video mode: %s\n",
+               screenWidth, screenHeight, screenBits, SDL_GetError());
         return 1;
     }
-
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
     loadTextures(data.textures);
     loadTextures(data.m_textures);
@@ -247,10 +338,10 @@ int main(int argc, char** argv)
         int start = SDL_GetTicks();
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
-            checkControls(event, &screen, data);
+            checkControls(event, &screen, data, controls);
         }
 
-        doActions(frameTime, data);
+        doActions(frameTime, data, controls);
 
         data.player.angle = clampLooping(data.player.angle, 0.0f, pi * 2);
 
@@ -270,7 +361,8 @@ int main(int argc, char** argv)
         for(size_t i = 0; i < numThreads; ++i) {
             distanceThreads[i] =
                 new std::thread(calculateDistances, data.rays,
-                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads), &data);
+                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+                                 &data, &controls);
         }
 
         for(size_t i = 0; i < numThreads; ++i) {
@@ -284,7 +376,8 @@ int main(int argc, char** argv)
         for(size_t i = 0; i < numThreads; ++i) {
             renderThreads[i] =
                     new std::thread(renderColumns, screen, data.rays,
-                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads), rand(), &data);
+                    i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+                                    rand(), &data, &controls);
         }
 
         for(size_t i = 0; i < numThreads; ++i) {
@@ -314,10 +407,16 @@ int main(int argc, char** argv)
         ++count;
     }
 
+    std::ofstream out("out.txt");
+
+    print2dVector(data.map, out);
+
+    out << std::endl;
+
+
     freeTextures(data);
     SDL_FreeSurface(screen);
 
     data.freeScreenSizeSensitiveData();
-    fclose(data.logFile);
     return 0;
 }

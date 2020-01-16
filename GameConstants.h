@@ -10,33 +10,32 @@
 namespace Constants {
     int screenWidth = 800;
     int screenHeight = 480;
-    const int screenBits = 32;
+    int screenBits = 32;
 
-    int currentRes = 1;
+    int currentRes = 2;
 
-    const int mapHeight = 16;
-    const int mapWidth = 16;
+    int mapHeight = 16;
+    int mapWidth = 16;
 
     const float pi = 3.14159265358979323846f;
     const float offMapDepth =  std::numeric_limits<float>::infinity();
 
-    const float defWalkingSpeed = 0.2f;
-    const float rotatingSpeed = 0.1f;
+    float defWalkingSpeed = 0.2f;
+    float rotatingSpeed = 0.1f;
 
     const float deg90 = pi / 2;
     const float deg180 = pi;
     const float deg270 = (pi * 3) / 2;
     const float deg360 = pi * 2;
 
-    const float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
+    float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
     float calcFOV() {
-        return pi / (6.0f * ((float)screenHeight / (float)screenWidth));
+        return pi / (6.4f * ((float)screenHeight / (float)screenWidth));
     }
-
     float FOV = calcFOV();
 
-    const float targetSpeed = 40.0f;
+    float targetSpeed = 40.0f;
 
     const float blockSize = 64.0f;
     const float naiveBlockBitSize = 1.0f / blockSize;
@@ -78,7 +77,7 @@ namespace Constants {
             {3840, 2160}
         };
 
-    const int resArraySize = 12;
+    int resArraySize = sizeof(resolutions);
 
     const SDL_Color defSkyColor{0, 20, 100, 255};
     SDL_Color skyColor = defSkyColor;
