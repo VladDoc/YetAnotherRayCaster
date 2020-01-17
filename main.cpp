@@ -45,13 +45,6 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     using namespace Constants;
 
     SDL_Color wallColor;
-    if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
-       withinRange((float)test.y, 0.0f, (float)mapHeight)) {
-            wallColor = gamedata.map[(int)test.y][(int)test.x].getColor();
-    } else {
-        wallColor = MapBlock::defWallColor;
-    }
-
     RenderData r_data;
 
     r_data.distanceToAWall = distanceToAWall;
@@ -70,11 +63,6 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
 
     r_data.floorHeight = screenHeight - r_data.ceilingHeight;
 
-    // Increases height of a wall
-    r_data.ceilingHeight -= (r_data.floorHeight - r_data.ceilingHeight) *
-                            gamedata.map[(int)test.y][(int)test.x].height -
-                            (r_data.floorHeight - r_data.ceilingHeight);
-
     r_data.ceilingHeight += gamedata.horizonLine;
     r_data.floorHeight += gamedata.horizonLine;
 
@@ -83,58 +71,6 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     float bufferRay = clampLooping(ray, 0.0f, pi * 2);
     r_data.skyTextureIndex = clamp((int)(starsWidth * (bufferRay / (pi * 2))), 0, starsWidth-1);
     r_data.skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
-
-    r_data.shouldTextureBeMirrored = false;
-    r_data.isHorisontal = false;
-
-    float checkY = test.y;
-
-    if(gamedata.map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
-       gamedata.map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
-            r_data.isHorisontal = true;
-            r_data.scalingVar = test.x; // Then wall is along horizontal axis
-            if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
-                r_data.shouldTextureBeMirrored = true;
-            }
-    } else {
-            r_data.scalingVar = test.y;
-            if(getFractialPart(test.x) < 0.5f) {
-                r_data.shouldTextureBeMirrored = true;
-            }
-    }
-
-    MapBlock currentBlock = gamedata.map[(int)test.y][(int)test.x];
-
-    r_data.texture = NULL;
-    r_data.lightmap = NULL;
-
-    r_data.isTextured = currentBlock.getIsTextured();
-    r_data.isLightMap = currentBlock.getIsLightMapped();
-
-
-
-    if(!r_data.shouldTextureBeMirrored) {
-        // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
-        if(r_data.isTextured) r_data.texture =
-            gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)];
-        if(r_data.isLightMap) r_data.lightmap =
-            gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)];
-    } else {
-        if(r_data.isTextured) r_data.texture =
-            gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)];
-        if(r_data.isLightMap) r_data.lightmap =
-            gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)];
-    }
-
-    // Non textured wall routine
-    if(whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::WEST  ||
-       whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::NORTH    )
-    {
-        r_data.wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
-    } else {
-        r_data.wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
-    }
-
 
     if(ctrls.texturedSky) {
         r_data.skyLightColor = *getTransposedTexturePixel(gamedata.sky_textures[0], 1907, 604);
@@ -148,6 +84,68 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
         r_data.fogColor = dayFogColor;
     }
 
+    if(!withinRange(test.x, 0.0f, (float)mapWidth) ||
+       !withinRange(test.y, 0.0f, (float)mapHeight)) {
+        wallColor = MapBlock::defWallColor;
+        distanceToAWall = offMapDepth;
+    } else {
+        wallColor = gamedata.map[(int)test.y][(int)test.x].getColor();
+        r_data.ceilingHeight -= (r_data.floorHeight - r_data.ceilingHeight) *
+                                gamedata.map[(int)test.y][(int)test.x].height -
+                                (r_data.floorHeight - r_data.ceilingHeight);
+
+
+        r_data.shouldTextureBeMirrored = false;
+        r_data.isHorisontal = false;
+
+        float checkY = test.y;
+
+        if(gamedata.map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
+           gamedata.map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
+                r_data.isHorisontal = true;
+                r_data.scalingVar = test.x; // Then wall is along horizontal axis
+                if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
+                    r_data.shouldTextureBeMirrored = true;
+                }
+        } else {
+                r_data.scalingVar = test.y;
+                if(getFractialPart(test.x) < 0.5f) {
+                    r_data.shouldTextureBeMirrored = true;
+                }
+        }
+
+        MapBlock currentBlock = gamedata.map[(int)test.y][(int)test.x];
+
+        r_data.texture = NULL;
+        r_data.lightmap = NULL;
+
+        r_data.isTextured = currentBlock.getIsTextured();
+        r_data.isLightMap = currentBlock.getIsLightMapped();
+
+
+
+        if(!r_data.shouldTextureBeMirrored) {
+            // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
+            if(r_data.isTextured) r_data.texture =
+                gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)];
+            if(r_data.isLightMap) r_data.lightmap =
+                gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)];
+        } else {
+            if(r_data.isTextured) r_data.texture =
+                gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)];
+            if(r_data.isLightMap) r_data.lightmap =
+                gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)];
+        }
+    }
+
+    // Non textured wall routine
+        if(whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::WEST  ||
+           whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::NORTH    )
+        {
+            r_data.wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
+        } else {
+            r_data.wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
+        }
 
     for(int i = 0; i < screenHeight; ++i)
     {
@@ -228,8 +226,11 @@ void readConfig(GameData& data, ControlState& ctrls)
     if(!script) return; // Then defaults will be loaded.
     std::string filename = script.get<std::string>("config.map");
 
-    Vector2D<bool> state = data.initMapFromFile(filename.c_str());
 
+    Vector2D<bool> state{false, false};
+    if(filename.size() > 0) {
+        state = data.initMapFromFile(filename.c_str());
+    }
     data.player.angle = script.get<float>("config.player.angle");
 
     // Then map doesn't have a starting point.
@@ -242,8 +243,10 @@ void readConfig(GameData& data, ControlState& ctrls)
     screenHeight = script.get<int>("config.screenHeight");
     screenBits = script.get<int>("config.screenBits");
 
-    ctrls.findpath = script.get<bool>("config.findPath");
-    data.millisAtCell = (int)(script.get<float>("config.time_at_each_cell") * 1000);
+    if(state.x && state.y) {
+        ctrls.findpath = script.get<bool>("config.findPath");
+        data.millisAtCell = (int)(script.get<float>("config.time_at_each_cell") * 1000);
+    }
 
     defWalkingSpeed = script.get<float>("config.walkingSpeed");
     rotatingSpeed = script.get<float>("config.rotatingSpeed");

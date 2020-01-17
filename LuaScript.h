@@ -45,7 +45,7 @@ public:
 
     template<typename T>
     T lua_get(const std::string& variableName) {
-      return 0;
+       return T{};
     }
 
     bool lua_gettostack(const std::string& variableName) {
@@ -146,7 +146,7 @@ inline int LuaScript::lua_get(const std::string& variableName) {
 
 template <>
 inline std::string LuaScript::lua_get(const std::string& variableName) {
-    std::string s = "null";
+    std::string s;
     if(lua_isstring(L, -1)) {
       s = std::string(lua_tostring(L, -1));
     } else {

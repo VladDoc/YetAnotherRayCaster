@@ -52,7 +52,6 @@ namespace a_star {
 
     std::stack<Pair> tracePath(std::vector<std::vector<cell>> cellDetails, Pair dest)
     {
-        printf ("\nThe Path is ");
         int row = dest.first;
         int col = dest.second;
 
@@ -158,7 +157,6 @@ namespace a_star {
                 {
                     cellDetails[i-1][j].parent_i = i;
                     cellDetails[i-1][j].parent_j = j;
-                    printf ("The destination cell is found\n");
                     foundDest = true;
                     return tracePath (cellDetails, dest);
                 }
@@ -190,7 +188,6 @@ namespace a_star {
                 {
                     cellDetails[i+1][j].parent_i = i;
                     cellDetails[i+1][j].parent_j = j;
-                    printf("The destination cell is found\n");
                     foundDest = true;
                     return tracePath (cellDetails, dest);;
                 }
@@ -222,7 +219,6 @@ namespace a_star {
                 {
                     cellDetails[i][j+1].parent_i = i;
                     cellDetails[i][j+1].parent_j = j;
-                    printf ("The destination cell is found\n");
                     foundDest = true;
                     return tracePath (cellDetails, dest);
                 }
@@ -254,7 +250,6 @@ namespace a_star {
                 {
                     cellDetails[i][j-1].parent_i = i;
                     cellDetails[i][j-1].parent_j = j;
-                    printf ("The destination cell is found\n");
                     foundDest = true;
                     return tracePath (cellDetails, dest);
                 }

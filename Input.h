@@ -31,8 +31,8 @@ void createRandomColorWallNearby(GameData& d)
     wallLocation.x = (int)(d.player.x + sinf(d.player.angle) * 3.0f);
     wallLocation.y = (int)(d.player.y + cosf(d.player.angle) * 3.0f);
 
-    wallLocation.x = clamp(wallLocation.x, 0, mapWidth);
-    wallLocation.y = clamp(wallLocation.y, 0, mapHeight);
+    wallLocation.x = clamp(wallLocation.x, 0, mapWidth-1);
+    wallLocation.y = clamp(wallLocation.y, 0, mapHeight-1);
 
     if(d.map[wallLocation.y][wallLocation.x].isEmpty()) {
         d.map[wallLocation.y][wallLocation.x].r = rand() % 64;

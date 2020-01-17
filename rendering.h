@@ -72,8 +72,8 @@ void rayTraversal(GameData& gamedata, float ray, float* distArray,
                 wasWallHit = !(int)gamedata.map[(int)test.y][(int)test.x].isEmpty();
             }
         }
-//        test.x = clamp(test.x, 0.0f, (float)mapWidth);
-//        test.y = clamp(test.y, 0.0f, (float)mapHeight);
+        test.x = clamp(test.x, 0.0f, (float)mapWidth);
+        test.y = clamp(test.y, 0.0f, (float)mapHeight);
 
         // Constant gives slightly better fish-eye correction. Without it walls are a little bit more 'rounded'
         distanceToAWall *= cosf(ray - gamedata.player.angle - (FOV / (screenWidth * 8)));
