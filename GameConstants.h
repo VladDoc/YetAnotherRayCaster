@@ -23,6 +23,7 @@ namespace Constants {
     float defWalkingSpeed = 0.2f;
     float rotatingSpeed = 0.1f;
 
+    const float deg45 = pi / 4;
     const float deg90 = pi / 2;
     const float deg180 = pi;
     const float deg270 = (pi * 3) / 2;

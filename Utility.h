@@ -26,7 +26,7 @@ void print2dVector(std::vector<std::vector<T>>& vec, std::ostream& where)
     if(vec.empty() || vec[0].empty()) return;
     for(size_t i = 0; i < vec.size(); ++i) {
         for(size_t j = 0; j < vec[0].size(); ++j) {
-            where << vec[i][j] << " ";
+            where << vec[j][i] << " ";
         }
         where << std::endl;
     }
@@ -120,6 +120,21 @@ SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColo
 #include "GameConstants.h"
 #include "GameData.h"
 #include "Vector2D.h"
+
+float directionToAngle(int x, int y)
+{
+    using namespace Constants;
+    if(x == 0 && y == 0) return -std::numeric_limits<float>::infinity();
+
+    if ( x >=  1 && y ==  0 ) return 0.0f;
+    if ( x >=  1 && y >=  1 ) return deg45;
+    if ( x ==  0 && y >=  1 ) return deg90;
+    if ( x <= -1 && y >=  1 ) return deg90 + deg45;
+    if ( x <= -1 && y ==  0 ) return deg180;
+    if ( x <= -1 && y <= -1 ) return deg180 + deg45;
+    if ( x ==  0 && y <= -1 ) return deg270;
+    if ( x >=  1 && y <= -1 ) return deg270 + deg45;
+}
 
 float degreesToRad(float degrees) {
     return degrees * (Constants::pi / 180);

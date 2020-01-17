@@ -1,6 +1,4 @@
 #include <cstdlib>
-
-
 #include <iostream>
 #include <fstream>
 #include <ctime>
@@ -145,7 +143,7 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
     }
 
     if(ctrls.night) {
-        r_data.fogColor = fastPixelShadowing(r_data.skyLightColor);
+        r_data.fogColor = blend(fastPixelShadowing(r_data.skyLightColor), nightFogColor, 127);
     } else {
         r_data.fogColor = dayFogColor;
     }
@@ -191,17 +189,36 @@ void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int thr
 }
 
 
-std::stack<Pair> findPath(Vector2D<int>& src, Vector2D<int>& dest, GameData& data)
+std::vector<Vector2D<int>> findPath(Vector2D<int>& src, Vector2D<int>& dest, GameData& data)
 {
+    using namespace a_star;
     std::vector<std::vector<int>> grid(Constants::mapHeight,
                                     std::vector<int>(Constants::mapWidth, 0));
     for(int i = 0; i < Constants::mapHeight; ++i) {
         for(int j = 0; j < Constants::mapWidth; ++j) {
-            grid[i][j] = !data.map[i][j].isEmpty();
+            grid[i][j] = data.map[i][j].isEmpty();
         }
     }
 
-    return aStarSearch(grid, std::make_pair(src.y, src.x), std::make_pair(src.y, src.x));
+
+    std::stack<Pair> in_path = aStarSearch(grid, std::make_pair(src.y, src.x),
+                                            std::make_pair(dest.y, dest.x));
+    std::vector<Vector2D<int>> path;
+
+    data.map[data.destination.y][data.destination.x] = {100, 0, 0};
+
+    size_t in_path_size = in_path.size();
+
+    for(size_t i = 0; i < in_path_size; ++i) {
+        Pair p = in_path.top();
+        path.push_back({p.second, p.first});
+        in_path.pop();
+    }
+
+    if(path.size() != in_path_size) {
+        std::swap(data.textures[0], data.textures[1]);
+    }
+    return path;
 }
 
 void readConfig(GameData& data, ControlState& ctrls)
@@ -211,14 +228,22 @@ void readConfig(GameData& data, ControlState& ctrls)
     if(!script) return; // Then defaults will be loaded.
     std::string filename = script.get<std::string>("config.map");
 
-    data.initMapFromFile(filename.c_str());
+    Vector2D<bool> state = data.initMapFromFile(filename.c_str());
 
-    //data.player.x = script.get<float>("config.player.X") + 1;
-    //data.player.y = script.get<float>("config.player.Y") + 1;
+    data.player.angle = script.get<float>("config.player.angle");
+
+    // Then map doesn't have a starting point.
+    if(!state.x) {
+        data.player.x = script.get<float>("config.player.X") - 1;
+        data.player.y = script.get<float>("config.player.Y") - 1;
+    }
 
     screenWidth = script.get<int>("config.screenWidth");
     screenHeight = script.get<int>("config.screenHeight");
     screenBits = script.get<int>("config.screenBits");
+
+    ctrls.findpath = script.get<bool>("config.findPath");
+    data.millisAtCell = (int)(script.get<float>("config.time_at_each_cell") * 1000);
 
     defWalkingSpeed = script.get<float>("config.walkingSpeed");
     rotatingSpeed = script.get<float>("config.rotatingSpeed");
@@ -271,6 +296,10 @@ int main(int argc, char** argv)
     using namespace Constants;
     GameData data;
     ControlState controls;
+
+    std::ofstream debug("debug.txt");
+    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+    std::cout.rdbuf(debug.rdbuf());
 
     readConfig(data, controls);
 
@@ -332,9 +361,19 @@ int main(int argc, char** argv)
 
     data.allocateScreenSizeSensitiveData();
 
+    std::vector<Vector2D<int>> path;
+    if(controls.findpath) {
+        Vector2D<int> src{data.player.x, data.player.y};
+        path = findPath(src, data.destination, data);
+    }
+
+    bool finishedPath = false;
+
     while (!data.done)
     {
-
+        if(controls.findpath && !finishedPath) {
+            finishedPath = data.tracePath(path, frameTime);
+        }
         int start = SDL_GetTicks();
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
@@ -407,12 +446,16 @@ int main(int argc, char** argv)
         ++count;
     }
 
+    debug.close();
+    std::cout.rdbuf(coutbuf);
+
     std::ofstream out("out.txt");
 
     print2dVector(data.map, out);
 
     out << std::endl;
 
+    out.close();
 
     freeTextures(data);
     SDL_FreeSurface(screen);

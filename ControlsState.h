@@ -26,5 +26,7 @@ struct ControlState
     bool coloredLight = true;
 
     bool logging = false;
+
+    bool findpath = false;
 };
 #endif // CONTROLSSTATE_H_INCLUDED

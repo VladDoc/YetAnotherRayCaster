@@ -5,18 +5,23 @@
 
 #include <vector>
 #include <fstream>
+#include <map>
 
+#include "Utility.h"
 #include "GameConstants.h"
 #include "player.h"
 #include "MapBlock.h"
 #include "Sprite.h"
+
+
+float directionToAngle(int x, int y);
 
 struct GameData {
     float walkingSpeed = 0.2f;
 
     int horizonLine = 0; // 0 is default it means that horizon won't be changed
 
-    bool done = false;
+    volatile bool done = false;
 
     std::vector<SDL_Surface*> textures;
     std::vector<SDL_Surface*> lightmaps;
@@ -55,6 +60,8 @@ struct GameData {
     float* distances{};
     float* rays{};
     Vector2D<float>* rayPositions{};
+    int millisAtCell;
+
 
     void fillUpTheStars() {
         using namespace Constants;
@@ -91,12 +98,14 @@ struct GameData {
 
     Player player{2.0f, 2.0f, Constants::pi / 4};
 
-    Vector2D<float> destination{};
+    Vector2D<int> destination{};
 
-    void initMapFromFile(const char* filename)
+    Vector2D<bool> initMapFromFile(const char* filename)
     {
+        Vector2D<bool> state{0,0}; // If no init happened then both are false
         std::ifstream in(filename);
-        if(!in.good()) return;
+        if(!in.good()) return state;
+
 
         map.clear(); // Map is vector<vector<MapBlock>>
 
@@ -113,21 +122,50 @@ struct GameData {
                 if(buf == '0') map[i][j] = def;
                 if(buf == ' ') map[i][j] = empty;
                 if(buf == 'I') {
-                    player.x = j;
-                    player.y = i;
-                    map[i][j]= empty;
+                    // So multiple occurrences of 'I' won't break anything
+                    if(!state.x) {
+                        player.x = j + 0.5f; // so you start in the middle of a cell, how you'd expect
+                        player.y = i + 0.5f;
+                        state.x = true;
+                    }
+                    map[i][j] = empty;
                 }
                 if(buf == 'E') {
-                    destination.x = j;
-                    destination.y = i;
-                    map[i][j] = {100, 0, 0};
+                    // multiple destinations don't make sense either
+                    if(!state.y) {
+                        destination.x = j;
+                        destination.y = i;
+                        //map[i][j] = {100, 0, 0};
+                        map[i][j]= empty;
+                        state.y = true;
+                    }
                 }
             }
             ++i;
         }
-        Constants::mapWidth = map[0].size();
+        Constants::mapWidth = map[0].size(); // Possible bug if lines are different sizes.
         Constants::mapHeight = map.size();
     }
+
+    // Returns true once finished.
+    bool tracePath(std::vector<Vector2D<int>>& path, int frametime)
+    {
+        if(lastPos >= path.size()-2) return true;
+        this->player.angle += (directionToAngle((path[lastPos+1].y - path[lastPos].y),
+                                                (path[lastPos+1].x - path[lastPos].x))
+                               - this->player.angle) * ((float)frametime / millisAtCell);
+        this->player.x += (path[lastPos+1].x - path[lastPos].x) *
+                            ((float)frametime / millisAtCell);
+        this->player.y += (path[lastPos+1].y - path[lastPos].y) *
+                            ((float)frametime / millisAtCell);
+        if((int)(this->player.x) == path[lastPos+1].x &&
+           (int)(this->player.y) == path[lastPos+1].y) {
+               lastPos += 1;
+           }
+        return false;
+    }
+protected:
+    int lastPos = 0;
 };
 
 thread_local std::mt19937 random;
@@ -139,6 +177,14 @@ enum class SideOfAWall
     EAST,
     SOUTH,
     WEST
+};
+
+const std::map<std::string, SideOfAWall> stringToSideOfAWall =
+{
+    {"NORTH", SideOfAWall::NORTH},
+    {"EAST", SideOfAWall::EAST},
+    {"SOUTH", SideOfAWall::SOUTH},
+    {"WEST", SideOfAWall::WEST}
 };
 
 #endif // GAMEDATA_H_INCLUDED
