@@ -300,9 +300,10 @@ int main(int argc, char** argv)
     GameData data;
     ControlState controls;
 
-    std::ofstream debug("debug.txt");
+    std::ofstream debug(controls.debug ? "debug.txt" : "");
     std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
-    std::cout.rdbuf(debug.rdbuf());
+
+    if(controls.debug) std::cout.rdbuf(debug.rdbuf());
 
     readConfig(data, controls);
 

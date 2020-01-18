@@ -26,7 +26,7 @@ void print2dVector(std::vector<std::vector<T>>& vec, std::ostream& where)
     if(vec.empty() || vec[0].empty()) return;
     for(size_t i = 0; i < vec.size(); ++i) {
         for(size_t j = 0; j < vec[0].size(); ++j) {
-            where << vec[j][i] << " ";
+            where << vec[i][j] << " ";
         }
         where << std::endl;
     }

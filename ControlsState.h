@@ -26,6 +26,7 @@ struct ControlState
     bool coloredLight = true;
 
     bool logging = false;
+    bool debug = false;
 
     bool findpath = false;
 };
