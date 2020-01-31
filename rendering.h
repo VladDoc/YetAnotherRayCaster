@@ -18,6 +18,8 @@ struct RenderData
     SDL_Surface* texture;
     SDL_Surface* lightmap;
 
+
+    float skyScaleCoef = 1.0f;
     int skyTextureIndex;
     int skyWidthIndex;
     int ceilingHeight;
@@ -183,7 +185,8 @@ inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
     Uint32 pixelColor;
     // If star exists in the stars map for the current location set white flickering pixel
     if(ctrls.shouldStarsBeRendered &&
-       gamedata.stars[(i + (horizonCap - gamedata.horizonLine)) * starsWidth + r_data.skyWidthIndex]) {
+       gamedata.stars[(int)(i + (horizonCap - gamedata.horizonLine)) * starsWidth
+                      + r_data.skyWidthIndex]) {
        pixelColor = getStarColorPixel();
     } else {
         // Do gradiented color sky or retrieve pixel out of sky box
@@ -294,6 +297,136 @@ inline Uint32 renderWall(const ControlState& ctrls, const GameData& gamedata, co
     if(ctrls.coloredLight) pixelColor = blend(pixelColor, r_data.skyLightColor, 92);
 
     return pixelColor;
+}
+
+void renderColumn(float ray, const int j, SDL_Surface* screen,
+                  Vector2D<float>& test, float distanceToAWall,
+                  const GameData& gamedata, const ControlState& ctrls)
+{
+    using namespace Constants;
+
+    SDL_Color wallColor;
+    RenderData r_data;
+
+    r_data.distanceToAWall = distanceToAWall;
+    r_data.skyScaleCoef = cosf(gamedata.player.angle - ray);
+
+    r_data.floorColor = Constants::floorColor;
+    r_data.skyColor = Constants::skyColor;
+
+    if(!ctrls.easterEgg) {
+        r_data.ceilingHeight = (float)(screenHeight / 2.0) -
+                                screenHeight / ((float)distanceToAWall);
+    } else {
+        r_data.ceilingHeight = (float)(screenHeight / 2.0) -
+                                screenHeight / ((float)distanceToAWall) +
+                                abs(j  - screenWidth / 2);
+    }
+
+    r_data.floorHeight = screenHeight - r_data.ceilingHeight;
+
+    r_data.ceilingHeight += gamedata.horizonLine;
+    r_data.floorHeight += gamedata.horizonLine;
+
+    r_data.wallSizeOnScreen = r_data.floorHeight - r_data.ceilingHeight;
+
+    float bufferRay = clampLooping(ray, 0.0f, pi * 2);
+    r_data.skyTextureIndex = clamp((int)(starsWidth * (bufferRay / (pi * 2))), 0, starsWidth-1);
+    r_data.skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
+
+    if(ctrls.texturedSky) {
+        r_data.skyLightColor = *getTransposedTexturePixel(gamedata.sky_textures[0], 1907, 604);
+    } else {
+        r_data.skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
+    }
+
+    if(ctrls.night) {
+        r_data.fogColor = blend(fastPixelShadowing(r_data.skyLightColor), nightFogColor, 127);
+    } else {
+        r_data.fogColor = dayFogColor;
+    }
+
+    if(!withinRange(test.x, 0.0f, (float)mapWidth) ||
+       !withinRange(test.y, 0.0f, (float)mapHeight)) {
+        wallColor = MapBlock::defWallColor;
+        distanceToAWall = offMapDepth;
+    } else {
+        wallColor = gamedata.map[(int)test.y][(int)test.x].getColor();
+        r_data.ceilingHeight -= (r_data.floorHeight - r_data.ceilingHeight) *
+                                gamedata.map[(int)test.y][(int)test.x].height -
+                                (r_data.floorHeight - r_data.ceilingHeight);
+
+
+        r_data.shouldTextureBeMirrored = false;
+        r_data.isHorisontal = false;
+
+        float checkY = test.y;
+
+        if(gamedata.map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
+           gamedata.map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
+                r_data.isHorisontal = true;
+                r_data.scalingVar = test.x; // Then wall is along horizontal axis
+                if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
+                    r_data.shouldTextureBeMirrored = true;
+                }
+        } else {
+                r_data.scalingVar = test.y;
+                if(getFractialPart(test.x) < 0.5f) {
+                    r_data.shouldTextureBeMirrored = true;
+                }
+        }
+
+        MapBlock currentBlock = gamedata.map[(int)test.y][(int)test.x];
+
+        r_data.texture = NULL;
+        r_data.lightmap = NULL;
+
+        r_data.isTextured = currentBlock.getIsTextured();
+        r_data.isLightMap = currentBlock.getIsLightMapped();
+
+
+
+        if(!r_data.shouldTextureBeMirrored) {
+            // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
+            if(r_data.isTextured) r_data.texture =
+                gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)];
+            if(r_data.isLightMap) r_data.lightmap =
+                gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)];
+        } else {
+            if(r_data.isTextured) r_data.texture =
+                gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)];
+            if(r_data.isLightMap) r_data.lightmap =
+                gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)];
+        }
+    }
+
+    // Non textured wall routine
+        if(whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::WEST  ||
+           whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::NORTH    )
+        {
+            r_data.wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
+        } else {
+            r_data.wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
+        }
+
+    for(int i = 0; i < screenHeight; ++i)
+    {
+        Uint32* pixel = getTexturePixel(screen, i, j);
+        Uint32 pixelColor;
+        if(i < r_data.ceilingHeight)
+        {
+            pixelColor = renderCeiling(ctrls, gamedata, r_data, i);
+        }
+        else if(i >= r_data.ceilingHeight && i < r_data.floorHeight)
+        {
+            pixelColor = renderWall(ctrls, gamedata, r_data, i);
+        }
+        else
+        {
+            pixelColor = renderFloor(ctrls, gamedata, r_data, i);
+        }
+        *pixel = pixelColor;
+    }
 }
 
 #endif // RENDERING_H_INCLUDED

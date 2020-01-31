@@ -35,7 +35,7 @@ public:
         // Generic default get
     template<typename T>
     T lua_getdefault(const std::string& variableName) {
-      return "null";
+      return T{};
     }
 
     void printError(const std::string& variableName, const std::string& reason)

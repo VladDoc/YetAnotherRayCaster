@@ -26,7 +26,7 @@ void print2dVector(std::vector<std::vector<T>>& vec, std::ostream& where)
     if(vec.empty() || vec[0].empty()) return;
     for(size_t i = 0; i < vec.size(); ++i) {
         for(size_t j = 0; j < vec[0].size(); ++j) {
-            where << vec[i][j] << " ";
+            where << vec[i][j];
         }
         where << std::endl;
     }
@@ -102,10 +102,11 @@ void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
     SDL_Surface* surf = SDL_LoadBMP(filename);
     SDL_Surface* texture = SDL_DisplayFormat(surf);
     if(!surf || !texture) {
-        printf("Unable to load textures. Exiting.....\n");
-        system("PAUSE");
+        fprintf(stderr, "%s", "Unable to load textures. Exiting.....\n");
+        fprintf(stderr, "%s", SDL_GetError());
         exit(-1);
     }
+    SDL_FreeSurface(surf);
     txt.push_back(texture);
 }
 
@@ -291,8 +292,6 @@ void mirrorTextures(std::vector<SDL_Surface*>& txt) {
 void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
 {
     loadTexture(skyTxt, "sky.bmp");
-//    loadTexture(skyTxt, "sky7.bmp");
-//    mirrorTexture(skyTxt[1]);
 }
 
 void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)

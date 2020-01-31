@@ -13,10 +13,17 @@
 #include "MapBlock.h"
 #include "Sprite.h"
 
-
+// I think it is time to stop being header pnly
 float directionToAngle(int x, int y);
 
+void loadSkyTextures(std::vector<SDL_Surface*>&);
+
+void loadTextures(std::vector<SDL_Surface*>&);
+
+void loadLightmaps(std::vector<SDL_Surface*>&);
+
 struct GameData {
+public:
     float walkingSpeed = 0.2f;
 
     int horizonLine = 0; // 0 is default it means that horizon won't be changed
@@ -33,6 +40,10 @@ struct GameData {
     std::vector<SDL_Surface*> sky_textures;
 
     std::vector<Sprite> hudSprites;
+
+    std::vector<std::string> texturePaths;
+    std::vector<std::string> lightmapPaths;
+    std::vector<std::string> skyTexturePaths;
 
     std::vector<std::vector<MapBlock>> map =
     {
@@ -62,6 +73,20 @@ struct GameData {
     Vector2D<float>* rayPositions{};
     int millisAtCell;
 
+    std::vector<float> skyScaleCoefs;
+
+    void populateCoefs()
+    {
+        using namespace Constants;
+        skyScaleCoefs.clear();
+        for(size_t i = 0; i < horizonCap; ++i) {
+            skyScaleCoefs.push_back(sinf((float)i / ((float)horizonCap / (pi / 2))));
+        }
+        for(size_t i = skyScaleCoefs.size()-1; i > 0; --i) {
+            float temp = skyScaleCoefs.at(i);
+            skyScaleCoefs.push_back(temp);
+        }
+    }
 
     void fillUpTheStars() {
         using namespace Constants;
@@ -79,6 +104,37 @@ struct GameData {
         }
     }
 
+    void loadAllTextures()
+    {
+        if(skyTexturePaths.empty()) {
+            loadSkyTextures(sky_textures);
+        } else {
+            for(auto& path : skyTexturePaths) {
+                if(!path.empty()) loadTexture(sky_textures, path.c_str());
+            }
+        }
+        if(texturePaths.empty()) {
+            loadTextures(textures);
+        } else {
+            for(auto& path : texturePaths) {
+                if(!path.empty()) {
+                        loadTexture(textures, path.c_str());
+                        loadTexture(m_textures, path.c_str());
+                }
+            }
+        }
+        if(lightmapPaths.empty()) {
+            loadLightmaps(lightmaps);
+        } else {
+            for(auto& path : lightmapPaths) {
+                if(!path.empty()) {
+                        loadTexture(lightmaps, path.c_str());
+                        loadTexture(m_lightmaps, path.c_str());
+                }
+            }
+        }
+    }
+
     void allocateScreenSizeSensitiveData()
     {
         using namespace Constants;
@@ -86,6 +142,7 @@ struct GameData {
         rayPositions = (Vector2D<float>*) realloc(rayPositions, sizeof(Vector2D<float>) * screenWidth);
         rays =  (float*) realloc(rays, sizeof(float) * screenWidth);
         fillUpTheStars();
+        populateCoefs();
     }
 
     void freeScreenSizeSensitiveData()
@@ -96,9 +153,33 @@ struct GameData {
         free(stars);
     }
 
+    void freeTextures()
+    {
+        for(auto i = textures.begin(); i != textures.end(); i++) {
+            SDL_FreeSurface(*i);
+        }
+        for(auto i = lightmaps.begin(); i != lightmaps.end(); i++) {
+            SDL_FreeSurface(*i);
+        }
+
+        for(auto i = m_textures.begin(); i != m_textures.end(); i++) {
+            SDL_FreeSurface(*i);
+        }
+        for(auto i = m_lightmaps.begin(); i != m_lightmaps.end(); i++) {
+            SDL_FreeSurface(*i);
+        }
+    }
+
+    ~GameData()
+    {
+        freeScreenSizeSensitiveData();
+        freeTextures();
+    }
+
     Player player{2.0f, 2.0f, Constants::pi / 4};
 
     Vector2D<int> destination{};
+
 
     Vector2D<bool> initMapFromFile(const char* filename)
     {
@@ -151,15 +232,15 @@ struct GameData {
     bool tracePath(std::vector<Vector2D<int>>& path, int frametime)
     {
         if(lastPos >= path.size()-2) return true;
-        this->player.angle += (directionToAngle((path[lastPos+1].y - path[lastPos].y),
-                                                (path[lastPos+1].x - path[lastPos].x))
-                               - this->player.angle) * ((float)frametime / millisAtCell);
-        this->player.x += (path[lastPos+1].x - path[lastPos].x) *
+        player.angle += (directionToAngle((path[lastPos+1].y - path[lastPos].y),
+                                          (path[lastPos+1].x - path[lastPos].x))
+                               - player.angle) * ((float)frametime / millisAtCell);
+        player.x += (path[lastPos+1].x - path[lastPos].x) *
                             ((float)frametime / millisAtCell);
-        this->player.y += (path[lastPos+1].y - path[lastPos].y) *
+        player.y += (path[lastPos+1].y - path[lastPos].y) *
                             ((float)frametime / millisAtCell);
-        if((int)(this->player.x) == path[lastPos+1].x &&
-           (int)(this->player.y) == path[lastPos+1].y) {
+        if((int)(player.x) == path[lastPos+1].x &&
+           (int)(player.y) == path[lastPos+1].y) {
                lastPos += 1;
            }
         return false;
@@ -186,5 +267,6 @@ const std::map<std::string, SideOfAWall> stringToSideOfAWall =
     {"SOUTH", SideOfAWall::SOUTH},
     {"WEST", SideOfAWall::WEST}
 };
+
 
 #endif // GAMEDATA_H_INCLUDED

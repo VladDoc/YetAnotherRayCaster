@@ -21,152 +21,6 @@
 #include "Sprite.h"
 #include "Rectangle.h"
 
-
-void freeTextures(GameData& gamedata) {
-    for(auto i = gamedata.textures.begin(); i != gamedata.textures.end(); i++) {
-        SDL_FreeSurface(*i);
-    }
-    for(auto i = gamedata.lightmaps.begin(); i != gamedata.lightmaps.end(); i++) {
-        SDL_FreeSurface(*i);
-    }
-
-    for(auto i = gamedata.m_textures.begin(); i != gamedata.m_textures.end(); i++) {
-        SDL_FreeSurface(*i);
-    }
-    for(auto i = gamedata.m_lightmaps.begin(); i != gamedata.m_lightmaps.end(); i++) {
-        SDL_FreeSurface(*i);
-    }
-}
-
-void renderColumn(float ray, const int j, SDL_Surface* screen,
-                  Vector2D<float>& test, float distanceToAWall,
-                  const GameData& gamedata, const ControlState& ctrls)
-{
-    using namespace Constants;
-
-    SDL_Color wallColor;
-    RenderData r_data;
-
-    r_data.distanceToAWall = distanceToAWall;
-
-    r_data.floorColor = Constants::floorColor;
-    r_data.skyColor = Constants::skyColor;
-
-    if(!ctrls.easterEgg) {
-        r_data.ceilingHeight = (float)(screenHeight / 2.0) -
-                                screenHeight / ((float)distanceToAWall);
-    } else {
-        r_data.ceilingHeight = (float)(screenHeight / 2.0) -
-                                screenHeight / ((float)distanceToAWall) +
-                                abs(j  - screenWidth / 2);
-    }
-
-    r_data.floorHeight = screenHeight - r_data.ceilingHeight;
-
-    r_data.ceilingHeight += gamedata.horizonLine;
-    r_data.floorHeight += gamedata.horizonLine;
-
-    r_data.wallSizeOnScreen = r_data.floorHeight - r_data.ceilingHeight;
-
-    float bufferRay = clampLooping(ray, 0.0f, pi * 2);
-    r_data.skyTextureIndex = clamp((int)(starsWidth * (bufferRay / (pi * 2))), 0, starsWidth-1);
-    r_data.skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
-
-    if(ctrls.texturedSky) {
-        r_data.skyLightColor = *getTransposedTexturePixel(gamedata.sky_textures[0], 1907, 604);
-    } else {
-        r_data.skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
-    }
-
-    if(ctrls.night) {
-        r_data.fogColor = blend(fastPixelShadowing(r_data.skyLightColor), nightFogColor, 127);
-    } else {
-        r_data.fogColor = dayFogColor;
-    }
-
-    if(!withinRange(test.x, 0.0f, (float)mapWidth) ||
-       !withinRange(test.y, 0.0f, (float)mapHeight)) {
-        wallColor = MapBlock::defWallColor;
-        distanceToAWall = offMapDepth;
-    } else {
-        wallColor = gamedata.map[(int)test.y][(int)test.x].getColor();
-        r_data.ceilingHeight -= (r_data.floorHeight - r_data.ceilingHeight) *
-                                gamedata.map[(int)test.y][(int)test.x].height -
-                                (r_data.floorHeight - r_data.ceilingHeight);
-
-
-        r_data.shouldTextureBeMirrored = false;
-        r_data.isHorisontal = false;
-
-        float checkY = test.y;
-
-        if(gamedata.map[(int)(checkY - horisontalBlockCheckStep)][(int)test.x].isEmpty() ||
-           gamedata.map[(int)(checkY + horisontalBlockCheckStep)][(int)test.x].isEmpty()   ) {
-                r_data.isHorisontal = true;
-                r_data.scalingVar = test.x; // Then wall is along horizontal axis
-                if(getFractialPart(test.y) > 0.5f) { // If y component greater than a half then it's a north wall
-                    r_data.shouldTextureBeMirrored = true;
-                }
-        } else {
-                r_data.scalingVar = test.y;
-                if(getFractialPart(test.x) < 0.5f) {
-                    r_data.shouldTextureBeMirrored = true;
-                }
-        }
-
-        MapBlock currentBlock = gamedata.map[(int)test.y][(int)test.x];
-
-        r_data.texture = NULL;
-        r_data.lightmap = NULL;
-
-        r_data.isTextured = currentBlock.getIsTextured();
-        r_data.isLightMap = currentBlock.getIsLightMapped();
-
-
-
-        if(!r_data.shouldTextureBeMirrored) {
-            // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
-            if(r_data.isTextured) r_data.texture =
-                gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)];
-            if(r_data.isLightMap) r_data.lightmap =
-                gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)];
-        } else {
-            if(r_data.isTextured) r_data.texture =
-                gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)];
-            if(r_data.isLightMap) r_data.lightmap =
-                gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)];
-        }
-    }
-
-    // Non textured wall routine
-        if(whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::WEST  ||
-           whichSide(r_data.shouldTextureBeMirrored, r_data.isHorisontal) == SideOfAWall::NORTH    )
-        {
-            r_data.wallColorPixel = getShadowedWallColor(wallColor, distanceToAWall);
-        } else {
-            r_data.wallColorPixel = getGradientedWallColor(wallColor, distanceToAWall);
-        }
-
-    for(int i = 0; i < screenHeight; ++i)
-    {
-        Uint32* pixel = getTexturePixel(screen, i, j);
-        Uint32 pixelColor;
-        if(i < r_data.ceilingHeight)
-        {
-            pixelColor = renderCeiling(ctrls, gamedata, r_data, i);
-        }
-        else if(i >= r_data.ceilingHeight && i < r_data.floorHeight)
-        {
-            pixelColor = renderWall(ctrls, gamedata, r_data, i);
-        }
-        else
-        {
-            pixelColor = renderFloor(ctrls, gamedata, r_data, i);
-        }
-        *pixel = pixelColor;
-    }
-}
-
 void calculateDistances(float* inRays, int from, int to, GameData* gamedata, ControlState* ctrls)
 {
     for(int j = from; j < to; ++j)
@@ -213,9 +67,6 @@ std::vector<Vector2D<int>> findPath(Vector2D<int>& src, Vector2D<int>& dest, Gam
         in_path.pop();
     }
 
-    if(path.size() != in_path_size) {
-        std::swap(data.textures[0], data.textures[1]);
-    }
     return path;
 }
 
@@ -239,14 +90,37 @@ void readConfig(GameData& data, ControlState& ctrls)
         data.player.y = script.get<float>("config.player.Y") - 1;
     }
 
-    screenWidth = script.get<int>("config.screenWidth");
-    screenHeight = script.get<int>("config.screenHeight");
-    screenBits = script.get<int>("config.screenBits");
+    char buf[80];
+    int texSize = script.get<int>("config.texturesSize");
+    for(int i = 1; i <= texSize;   ++i)
+    {
+        sprintf(buf, "config.textures.tex%d", i);
+        data.texturePaths.push_back(script.get<std::string>(buf));
+    }
+
+    texSize = script.get<int>("config.lightmapsSize");
+    for(int i = 1;  i <= texSize;   ++i)
+    {
+        sprintf(buf, "config.lightmaps.tex%d", i);
+        data.lightmapPaths.push_back(script.get<std::string>(buf));
+    }
+
+    texSize = script.get<int>("config.skyTexturesSize");
+    for(int i = 1;  i <= texSize;   ++i)
+    {
+        sprintf(buf, "config.skyTextures.tex%d", i);
+        data.skyTexturePaths.push_back(script.get<std::string>(buf));
+    }
 
     if(state.x && state.y) {
         ctrls.findpath = script.get<bool>("config.findPath");
         data.millisAtCell = (int)(script.get<float>("config.time_at_each_cell") * 1000);
     }
+
+    screenWidth = script.get<int>("config.screenWidth");
+    screenHeight = script.get<int>("config.screenHeight");
+    screenBits = script.get<int>("config.screenBits");
+    ctrls.isFullScreen = script.get<bool>("config.isFullScreen");
 
     defWalkingSpeed = script.get<float>("config.walkingSpeed");
     rotatingSpeed = script.get<float>("config.rotatingSpeed");
@@ -285,7 +159,6 @@ void readConfig(GameData& data, ControlState& ctrls)
     ctrls.fog = script.get<bool>("config.fog");
     ctrls.coloredLight = script.get<bool>("config.coloredLight");
     ctrls.naiveApproach = script.get<bool>("config.naiveApproach");
-    ctrls.isFullScreen = script.get<bool>("config.isFullScreen");
     ctrls.vSync = script.get<bool>("config.vSync");
     ctrls.night = script.get<bool>("config.night");
     ctrls.texturedSky = script.get<bool>("config.texturedSky");
@@ -305,18 +178,18 @@ int main(int argc, char** argv)
 
     if(controls.debug) std::cout.rdbuf(debug.rdbuf());
 
-    readConfig(data, controls);
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
         return 1;
     }
 
+
     atexit(SDL_Quit);
 
     setWindowPos(8, 30);
 
+    readConfig(data, controls);
 
     Uint32 fullscreen = controls.isFullScreen ? SDL_FULLSCREEN : 0x0;
 
@@ -330,13 +203,17 @@ int main(int argc, char** argv)
         return 1;
     }
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
-    loadTextures(data.textures);
-    loadTextures(data.m_textures);
 
-    loadLightmaps(data.lightmaps);
-    loadLightmaps(data.m_lightmaps);
+//    loadTextures(data.textures);
+//    loadTextures(data.m_textures);
+//
+//    loadLightmaps(data.lightmaps);
+//    loadLightmaps(data.m_lightmaps);
+//
+//    loadSkyTextures(data.sky_textures);
 
-    loadSkyTextures(data.sky_textures);
+
+    data.loadAllTextures();
 
     mirrorTextures(data.m_textures);
     mirrorTextures(data.m_lightmaps);
@@ -371,6 +248,7 @@ int main(int argc, char** argv)
         path = findPath(src, data.destination, data);
     }
 
+
     bool finishedPath = false;
 
     while (!data.done)
@@ -383,9 +261,9 @@ int main(int argc, char** argv)
         while(SDL_PollEvent(&event)) {
             checkControls(event, &screen, data, controls);
         }
-
-        doActions(frameTime, data, controls);
-
+        if(!controls.findpath || finishedPath) {
+            doActions(frameTime, data, controls);
+        }
         data.player.angle = clampLooping(data.player.angle, 0.0f, pi * 2);
 
         for(int j = 0; j < screenWidth; ++j)
@@ -461,9 +339,7 @@ int main(int argc, char** argv)
 
     out.close();
 
-    freeTextures(data);
     SDL_FreeSurface(screen);
 
-    data.freeScreenSizeSensitiveData();
     return 0;
 }
