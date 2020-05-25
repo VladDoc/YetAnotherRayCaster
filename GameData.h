@@ -66,11 +66,13 @@ public:
     };
 
 
-    Uint8* stars{};
+    std::vector<Uint8> stars;
 
-    float* distances{};
-    float* rays{};
-    Vector2D<float>* rayPositions{};
+    std::vector<float> distances;
+    std::vector<float> rays;
+
+    std::vector<Vector2D<float>> eyes;
+    std::vector<Vector2D<float>> rayPositions;
     int millisAtCell;
 
     std::vector<float> skyScaleCoefs;
@@ -92,8 +94,9 @@ public:
         using namespace Constants;
         std::mt19937 r;
         r.seed(1);
-        stars = (Uint8*)realloc(stars, starsWidth * starsHeight * sizeof(*stars));
-        memset(stars, 0, starsWidth * starsHeight);
+        stars.clear();
+        stars.resize(starsWidth * (starsHeight + screenHeight / 2 + 1000));
+
 
         for(int i = 0; i < starsHeight; ++i) {
             for(int j = 0; j < starsWidth; ++j) {
@@ -138,19 +141,16 @@ public:
     void allocateScreenSizeSensitiveData()
     {
         using namespace Constants;
-        distances = (float*) realloc(distances, sizeof(float) * screenWidth);
-        rayPositions = (Vector2D<float>*) realloc(rayPositions, sizeof(Vector2D<float>) * screenWidth);
-        rays =  (float*) realloc(rays, sizeof(float) * screenWidth);
+        distances.resize(screenWidth);
+        rayPositions.resize(screenWidth);
+        rays.resize(screenWidth);
+        eyes.resize(screenWidth);
         fillUpTheStars();
         populateCoefs();
     }
 
     void freeScreenSizeSensitiveData()
     {
-        free(distances);
-        free(rayPositions);
-        free(rays);
-        free(stars);
     }
 
     void freeTextures()

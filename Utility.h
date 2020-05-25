@@ -34,23 +34,24 @@ void print2dVector(std::vector<std::vector<T>>& vec, std::ostream& where)
 // Works only for positive min and max
 inline float clampLooping(float value, float min, float max) {
     int howManyTimesMax = value / max;
-    return value > 0 ? (value - (howManyTimesMax * max))
+    float retval = value > 0 ? (value - (howManyTimesMax * max))
                      : max + (value - (howManyTimesMax * max));
+    return retval;
 
 }
 
 template<typename T>
-bool withinRange(T arg, T min, T max)
+inline bool withinRange(T arg, T min, T max)
 {
     return arg >= min && arg < max;
 }
 
-Uint32 ColorToUint(int R, int G, int B)
+inline Uint32 ColorToUint(int R, int G, int B)
 {
 	return (Uint32)((R << 16) + (G << 8) + (B << 0));
 }
 
-SDL_Color UintToColor(Uint32 color) {
+inline SDL_Color UintToColor(Uint32 color) {
   SDL_Color retColor;
 
   retColor.unused = (color >> 24) & 0xFF;
@@ -61,18 +62,18 @@ SDL_Color UintToColor(Uint32 color) {
   return retColor;
 }
 
-float getFractialPart(float arg)
+inline float getFractialPart(float arg)
 {
     int wholePart = (int)arg;
     return arg - wholePart;
 }
 
-float fractionBetweenNumbers(float arg, float min, float max)
+inline float fractionBetweenNumbers(float arg, float min, float max)
 {
     return arg - min;
 }
 
-float invertFraction(float arg)
+inline float invertFraction(float arg)
 {
     int wholePart = (int)arg;
     float fraction = arg - wholePart;
@@ -97,7 +98,7 @@ inline Uint32* getTransposedTexturePixel(SDL_Surface* surf, int i, int j) {
     return (Uint32*)(surf->pixels + j * surf->pitch + i * sizeof(Uint32));
 }
 
-void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
+inline void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
 {
     SDL_Surface* surf = SDL_LoadBMP(filename);
     SDL_Surface* texture = SDL_DisplayFormat(surf);
@@ -110,7 +111,7 @@ void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
     txt.push_back(texture);
 }
 
-SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColor) {
+inline SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColor) {
         color.r = clamp(color.r + lightmapColor.r - 192, 0, 255);
         color.g = clamp(color.g + lightmapColor.g - 192, 0, 255);
         color.b = clamp(color.b + lightmapColor.b - 192, 0, 255);
@@ -122,7 +123,7 @@ SDL_Color transformColorByLightMap(SDL_Color color, const SDL_Color lightmapColo
 #include "GameData.h"
 #include "Vector2D.h"
 
-float directionToAngle(int x, int y)
+inline float directionToAngle(int x, int y)
 {
     using namespace Constants;
     if(x == 0 && y == 0) return -std::numeric_limits<float>::infinity();
@@ -137,18 +138,18 @@ float directionToAngle(int x, int y)
     if ( x >=  1 && y <= -1 ) return deg270 + deg45;
 }
 
-float degreesToRad(float degrees) {
+inline float degreesToRad(float degrees) {
     return degrees * (Constants::pi / 180);
 }
 
-float angleBetweenPoints(Vector2D<float> a, Vector2D<float> b)
+inline float angleBetweenPoints(Vector2D<float> a, Vector2D<float> b)
 {
     float deltaY = std::abs(b.y - a.y);
     float deltaX = std::abs(b.x - a.x);
     return std::atan2(deltaY, deltaX);
 }
 
-float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray, float sine, float cosine)
+inline float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray, float sine, float cosine)
 {
 
     /*
@@ -216,7 +217,7 @@ float getDistanceToTheNearestIntersection(const Vector2D<float>& test, float ray
         return distance.x < distance.y ? distance.x : distance.y;
 }
 
-void loadTextures(std::vector<SDL_Surface*>& txt) {
+inline void loadTextures(std::vector<SDL_Surface*>& txt) {
     loadTexture(txt, "wall2.bmp");
     loadTexture(txt, "wall.bmp");
     loadTexture(txt, "wall3.bmp");
@@ -225,11 +226,11 @@ void loadTextures(std::vector<SDL_Surface*>& txt) {
 }
 
 
-void loadLightmaps(std::vector<SDL_Surface*>& lmp) {
+inline void loadLightmaps(std::vector<SDL_Surface*>& lmp) {
     loadTexture(lmp, "wall2bumpmap.bmp");
 }
 
-Uint32* getScaledTexturePixel(SDL_Surface* txt,
+inline Uint32* getScaledTexturePixel(SDL_Surface* txt,
                               int yourWidth, int yourHeight, int i, int j) {
     Vector2D<float> coeffs;
     coeffs.x = (float)txt->w / (float)yourWidth;
@@ -238,7 +239,7 @@ Uint32* getScaledTexturePixel(SDL_Surface* txt,
     return getTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
 }
 
-Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
+inline Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
                               int yourWidth, int yourHeight, int i, int j) {
     Vector2D<float> coeffs;
     coeffs.x = (float)txt->h / (float)yourWidth;
@@ -247,7 +248,7 @@ Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
     return getTransposedTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
 }
 
-void fillUpTheMapToBeBox(MapBlock** aMap)
+inline void fillUpTheMapToBeBox(MapBlock** aMap)
 {
     using namespace Constants;
     for(int i = 0; i < mapWidth; ++i)
@@ -270,7 +271,7 @@ void fillUpTheMapToBeBox(MapBlock** aMap)
     }
 }
 
-void mirrorTexture(SDL_Surface* txt) {
+inline void mirrorTexture(SDL_Surface* txt) {
     for(int i = 0; i < txt->h; ++i) {
         for(int j = 0; j < txt->w / 2; ++j) {
             Uint32* left = getTexturePixel(txt, i, j);
@@ -283,18 +284,18 @@ void mirrorTexture(SDL_Surface* txt) {
     }
 }
 
-void mirrorTextures(std::vector<SDL_Surface*>& txt) {
+inline void mirrorTextures(std::vector<SDL_Surface*>& txt) {
     for(auto i = txt.begin(); i != txt.end(); i++) {
         mirrorTexture(*i);
     }
 }
 
-void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
+inline void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
 {
     loadTexture(skyTxt, "sky.bmp");
 }
 
-void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
+inline void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
 {
     Vector2D<float> coeffs;
     coeffs.x = (float)lightmap->w / (float)texture->w;
@@ -313,7 +314,7 @@ void applyLightMapToTexture(SDL_Surface* texture, SDL_Surface* lightmap)
     }
 }
 
-void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
+inline void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
                               std::vector<SDL_Surface*>& lmp,
                               GameData& d)
 {
@@ -328,7 +329,7 @@ void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
     }
 }
 
-void setLightMapsTo0(GameData& d)
+inline void setLightMapsTo0(GameData& d)
 {
     using namespace Constants;
     for(int i = 0; i < mapHeight; ++i) {
@@ -350,7 +351,7 @@ void setLightMapsTo0(GameData& d)
     Uint32 amask = 0xff000000;
 #endif
 
-void transposeTexture(SDL_Surface** txt)
+inline void transposeTexture(SDL_Surface** txt)
 {
     SDL_Surface* newTxt = SDL_CreateRGBSurface(0, (*txt)->h, (*txt)->w,
                                                (*txt)->format->BitsPerPixel,
@@ -368,7 +369,7 @@ void transposeTexture(SDL_Surface** txt)
     *txt = newTxt;
 }
 
-Uint8 getAlpha(Uint32 arg) {
+inline Uint8 getAlpha(Uint32 arg) {
     #if SDL_BYTEORDER == SDL_BIG_ENDIAN
         return (Uint8)arg;
     #else
@@ -376,20 +377,20 @@ Uint8 getAlpha(Uint32 arg) {
     #endif // SDL_BYTEORDER
 }
 
-void loadSprites(std::vector<Sprite>& sprts)
+inline void loadSprites(std::vector<Sprite>& sprts)
 {
     Sprite spr({0, 0, 0, 0}, "");
     sprts.push_back(spr);
 }
 
-void transposeTextures(std::vector<SDL_Surface*>& txts)
+inline void transposeTextures(std::vector<SDL_Surface*>& txts)
 {
     for(size_t i = 0; i < txts.size(); ++i) {
         transposeTexture(&txts.at(i));
     }
 }
 
-void setWindowPos(int x, int y)
+inline void setWindowPos(int x, int y)
 {
     char env[80];
     sprintf(env, "SDL_VIDEO_WINDOW_POS=%d,%d", x, y);
@@ -397,7 +398,7 @@ void setWindowPos(int x, int y)
     SDL_putenv(env);
 }
 
-SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
+inline SideOfAWall whichSide(bool isMirrored, bool isHorisontal)
 {
     if(!isMirrored &&  isHorisontal)    return SideOfAWall::NORTH;
     if(!isMirrored && !isHorisontal)    return SideOfAWall::WEST;

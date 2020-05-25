@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <thread>
+#include <future>
 
 #include <SDL/SDL.h>
 
@@ -20,22 +21,35 @@
 #include "rendering.h"
 #include "Sprite.h"
 #include "Rectangle.h"
+#include "ThreadPool.h"
 
-void calculateDistances(float* inRays, int from, int to, GameData* gamedata, ControlState* ctrls)
+void calcRays(std::vector<float>* inRays, int from, int to, const GameData* data)
 {
-    for(int j = from; j < to; ++j)
+    using namespace Constants;
+    for(size_t j = from; j < to; ++j)
     {
-        rayTraversal(*gamedata, inRays[j], gamedata->distances, gamedata->rayPositions, *ctrls, j);
+           (*inRays)[j] = clampLooping((data->player.angle - FOV / 2.0f) +
+                                      ((float)j / (float)screenWidth) * FOV,
+                                       0.0f, 2 * pi);
     }
 }
 
-void renderColumns(SDL_Surface* screen, float* inRays, int from, int to, int threadId,
+void calculateDistances(std::vector<float>* inRays, int from, int to, GameData* gamedata, ControlState* ctrls)
+{
+    for(int j = from; j < to; ++j)
+    {
+        rayTraversal(*gamedata, (*inRays)[j], &gamedata->distances[0],
+                      &gamedata->rayPositions[0], &gamedata->eyes[0], *ctrls, j);
+    }
+}
+
+void renderColumns(SDL_Surface* screen, std::vector<float>* inRays, int from, int to, int threadId,
                    const GameData* gamedata, const ControlState* ctrls)
 {
     random.seed(threadId);
-    for(int j = from; j < to; ++j)
+    for(int j = from; j < to; j++)
     {
-        renderColumn(inRays[j], j, screen, gamedata->rayPositions[j],
+        renderColumn((*inRays)[j], j, screen, gamedata->rayPositions[j],
                       gamedata->distances[j], *gamedata, *ctrls);
     }
 }
@@ -204,15 +218,6 @@ int main(int argc, char** argv)
     }
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
-//    loadTextures(data.textures);
-//    loadTextures(data.m_textures);
-//
-//    loadLightmaps(data.lightmaps);
-//    loadLightmaps(data.m_lightmaps);
-//
-//    loadSkyTextures(data.sky_textures);
-
-
     data.loadAllTextures();
 
     mirrorTextures(data.m_textures);
@@ -222,7 +227,7 @@ int main(int argc, char** argv)
     doLightMapsToAllTextures(data.m_textures, data.m_lightmaps, data);
     setLightMapsTo0(data);
 
-    transposeTextures(data.sky_textures);
+    //transposeTextures(data.sky_textures);
     transposeTextures(data.textures);
     transposeTextures(data.lightmaps);
     transposeTextures(data.m_textures);
@@ -251,6 +256,11 @@ int main(int argc, char** argv)
 
     bool finishedPath = false;
 
+    ThreadPool pool(std::thread::hardware_concurrency());
+
+    std::vector<std::future<void>> results;
+    results.reserve(std::thread::hardware_concurrency());
+
     while (!data.done)
     {
         if(controls.findpath && !finishedPath) {
@@ -266,47 +276,40 @@ int main(int argc, char** argv)
         }
         data.player.angle = clampLooping(data.player.angle, 0.0f, pi * 2);
 
-        for(int j = 0; j < screenWidth; ++j)
-        {
-           data.rays[j] = (data.player.angle - FOV / 2.0f) +
-                          ((float)j / (float)Constants::screenWidth) * FOV;
-        }
-
 
         size_t numThreads;
         if(controls.multithreaded) numThreads = std::thread::hardware_concurrency();
         else numThreads = 1;
 
-        std::thread** distanceThreads = new std::thread*[numThreads];
 
         for(size_t i = 0; i < numThreads; ++i) {
-            distanceThreads[i] =
-                new std::thread(calculateDistances, data.rays,
-                            i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
-                                 &data, &controls);
+            results.emplace_back(pool.enqueue(calcRays, &data.rays,
+                        i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+                            &data));
         }
+
+        for(auto& a : results) a.wait();
+        results.clear();
 
         for(size_t i = 0; i < numThreads; ++i) {
-            distanceThreads[i]->join();
-            delete distanceThreads[i];
+            results.emplace_back(pool.enqueue(calculateDistances, &data.rays,
+                        i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+                            &data, &controls));
         }
 
-        delete[] distanceThreads;
-        std::thread** renderThreads = new std::thread*[numThreads];
+        for(auto& a : results) a.wait();
+        results.clear();
+
 
         for(size_t i = 0; i < numThreads; ++i) {
-            renderThreads[i] =
-                    new std::thread(renderColumns, screen, data.rays,
-                    i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
-                                    rand(), &data, &controls);
+            results.emplace_back(pool.enqueue(renderColumns, screen, &data.rays,
+                         i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+                                    rand(), &data, &controls));
         }
 
-        for(size_t i = 0; i < numThreads; ++i) {
-            renderThreads[i]->join();
-            delete renderThreads[i];
-        }
+        for(auto& a : results) a.wait();
+        results.clear();
 
-        delete[] renderThreads;
         int end = SDL_GetTicks();
         frameTime = end - start;
 

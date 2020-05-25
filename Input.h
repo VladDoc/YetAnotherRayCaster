@@ -7,7 +7,7 @@
 #include "player.h"
 #include "rendering.h"
 
-void destroyAWallThatPlayerIsFacing(GameData& gamedata, ControlState& ctrls)
+inline void destroyAWallThatPlayerIsFacing(GameData& gamedata, ControlState& ctrls)
 {
     using namespace Constants;
     float distanceToAWall = 0.0f;
@@ -16,7 +16,7 @@ void destroyAWallThatPlayerIsFacing(GameData& gamedata, ControlState& ctrls)
     test.x = gamedata.player.x;
     test.y = gamedata.player.y;
 
-    rayTraversal(gamedata, gamedata.player.angle, &distanceToAWall, &test, ctrls);
+    rayTraversal(gamedata, gamedata.player.angle, &distanceToAWall, &test, nullptr, ctrls);
 
     if(withinRange((float)test.x, 0.0f, (float)mapWidth) &&
        withinRange((float)test.y, 0.0f, (float)mapHeight)) {
@@ -24,7 +24,7 @@ void destroyAWallThatPlayerIsFacing(GameData& gamedata, ControlState& ctrls)
     }
 }
 
-void createRandomColorWallNearby(GameData& d)
+inline void createRandomColorWallNearby(GameData& d)
 {
     using namespace Constants;
     Vector2D<int> wallLocation;
@@ -41,7 +41,7 @@ void createRandomColorWallNearby(GameData& d)
     }
 }
 
-void changeResolution(SDL_Surface** screen, const Vector2D<int> res,
+inline void changeResolution(SDL_Surface** screen, const Vector2D<int> res,
                        GameData& gamedata, ControlState& controls)
 {
     using namespace Constants;
@@ -62,7 +62,7 @@ void changeResolution(SDL_Surface** screen, const Vector2D<int> res,
     gamedata.allocateScreenSizeSensitiveData();
 }
 
-void checkControls(const SDL_Event event, SDL_Surface** screen,
+inline void checkControls(const SDL_Event event, SDL_Surface** screen,
                    GameData& gamedata, ControlState& controls)
 {
     using namespace Constants;
@@ -278,7 +278,7 @@ void checkControls(const SDL_Event event, SDL_Surface** screen,
 }
 
 
-void doActions(const int frameTime, GameData& gamedata, ControlState& ctrls) {
+inline void doActions(const int frameTime, GameData& gamedata, ControlState& ctrls) {
     using namespace Constants;
     Player& player = gamedata.player;
     float walkingSpeed = gamedata.walkingSpeed;

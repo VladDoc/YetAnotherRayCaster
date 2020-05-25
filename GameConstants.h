@@ -46,7 +46,7 @@ namespace Constants {
     int targetFPS = 1000;
 
     int calcHorizonCap() {
-        return (screenHeight * 2) / 3;
+        return (screenHeight * 4);// / 3;
     }
 
     int horizonCap = calcHorizonCap();

@@ -18,13 +18,17 @@ struct RenderData
     SDL_Surface* texture;
     SDL_Surface* lightmap;
 
+    SDL_Surface* screen;
 
     float skyScaleCoef = 1.0f;
     int skyTextureIndex;
     int skyWidthIndex;
     int ceilingHeight;
     int floorHeight;
-    int wallSizeOnScreen;
+
+    int j {};
+
+    int wallSizeOnScreen {};
 
     float distanceToAWall;
     float scalingVar;
@@ -36,8 +40,8 @@ struct RenderData
     bool isHorisontal;
 };
 
-void rayTraversal(GameData& gamedata, float ray, float* distArray,
-                 Vector2D<float>* rayPosArray, ControlState& ctrls, int j = 0)
+inline void rayTraversal(GameData& gamedata, float ray, float* distArray,
+                 Vector2D<float>* rayPosArray, Vector2D<float>* eyes, ControlState& ctrls, int j = 0)
 {
         using namespace Constants;
         float distanceToAWall = 0.0f;
@@ -82,6 +86,7 @@ void rayTraversal(GameData& gamedata, float ray, float* distArray,
 
         if(distArray) distArray[j] = distanceToAWall;
         if(rayPosArray) rayPosArray[j] = test;
+        if(eyes) eyes[j] = eye;
 }
 
 inline Uint32 getSkyGradientedColor(const SDL_Color color, const int i, const int horLine)
@@ -103,7 +108,7 @@ inline Uint32 getFloorGradientedColor(const SDL_Color color, const int i, const 
             );
 }
 
-Uint32 getStarColorPixel()
+inline Uint32 getStarColorPixel()
 {
     return ColorToUint(
                 clamp(dist(random), 165, 255),
@@ -173,9 +178,36 @@ inline Uint32 doFloorFog(Uint32 source, Uint32 fogColor, int i, const GameData& 
 inline Uint32 doCeilingFog(Uint32 source, Uint32 fogColor, int i, const GameData& data)
 {
     using namespace Constants;
-    Uint8 alpha = clamp((i + (Constants::horizonCap - data.horizonLine)) /
+    Uint8 alpha = clamp((i + (horizonCap - data.horizonLine)) /
                         2 / (starsHeight / 2 / 256), 0, 255);
     return blend(source, fogColor, alpha);
+}
+
+inline float getSkyTextureHeight(int i, int horline)
+{
+    using namespace Constants;
+    return (float)((i + (horizonCap - horline)) * (pi) / (starsHeight / 2));
+}
+
+inline float getSkyTextureHeightRev(int i, int horline)
+{
+    using namespace Constants;
+    return getSkyTextureHeight(screenHeight - 1 - i, -horline);
+}
+
+Uint32* getSpherePixel(SDL_Surface* txt, float height, float angle)
+{
+    using namespace Constants;
+    int middle = std::min(txt->w, txt->h) / 2;
+
+    height -= pi / 2;
+    //angle = clampLooping(angle, 0.0f, 2 * pi);
+    angle -= pi;
+
+    int i = middle + (int)(middle * (height / (pi / 2)));
+    int j = middle + (int)(middle * (angle / pi));
+
+    return getTexturePixel(txt, i, j);
 }
 
 inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
@@ -185,17 +217,20 @@ inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
     Uint32 pixelColor;
     // If star exists in the stars map for the current location set white flickering pixel
     if(ctrls.shouldStarsBeRendered &&
-       gamedata.stars[(int)(i + (horizonCap - gamedata.horizonLine)) * starsWidth
-                      + r_data.skyWidthIndex]) {
+       gamedata.stars[(i + (horizonCap - gamedata.horizonLine)) * starsWidth + r_data.skyWidthIndex]) {
        pixelColor = getStarColorPixel();
     } else {
         // Do gradiented color sky or retrieve pixel out of sky box
         if(!ctrls.texturedSky) {
             pixelColor = getSkyGradientedColor(r_data.skyColor, i, gamedata.horizonLine);
         } else {
-                pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
-                              starsWidth, starsHeight,
-                              i + (horizonCap - gamedata.horizonLine), r_data.skyTextureIndex);
+//                pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
+//                              starsWidth, starsHeight,
+//                              (i + (horizonCap - gamedata.horizonLine)),
+//                              r_data.skyTextureIndex);
+              pixelColor = *getSpherePixel(gamedata.sky_textures[0],
+                                           getSkyTextureHeight(i, gamedata.horizonLine),
+                                           gamedata.rays[r_data.j]);
         }
         if(ctrls.fog) {
             pixelColor = doCeilingFog(pixelColor, r_data.fogColor, i, gamedata);
@@ -215,6 +250,20 @@ inline Uint32 renderFloor(const ControlState& ctrls, const GameData& gamedata, c
             pixelColor = doFloorFog(pixelColor, r_data.fogColor, i, gamedata);
         }
         if(ctrls.coloredLight) pixelColor = blend(pixelColor, r_data.skyLightColor, 92);
+//        Uint32 skyPixel;
+//
+//        int indexI = starsHeight / 2 - (i + (horizonCap - gamedata.horizonLine) - starsHeight / 2);
+//        int indexJ = r_data.skyTextureIndex;
+//
+//        if(ctrls.texturedSky) {
+//            skyPixel = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
+//                                                       starsWidth, starsHeight,
+//                                                       indexI,
+//                                                       indexJ);
+//        } else {
+//            skyPixel = getSkyGradientedColor(r_data.skyColor, i, gamedata.horizonLine);
+//        }
+//        pixelColor = blend(pixelColor, doFloorFog(skyPixel, 0x7F7F7F, i, gamedata), 64);
     } else {
         if(ctrls.shouldStarsBeRendered &&
            gamedata.stars[(i + (horizonCap - gamedata.horizonLine))
@@ -225,10 +274,15 @@ inline Uint32 renderFloor(const ControlState& ctrls, const GameData& gamedata, c
             if(!ctrls.texturedSky) {
                 pixelColor = getSkyGradientedColor(r_data.skyColor, i, gamedata.horizonLine);
             } else {
+            /*
                 pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
                                 starsWidth, starsHeight,
                                 i + (horizonCap - gamedata.horizonLine),
                                                         r_data.skyTextureIndex);
+            */
+              pixelColor = *getSpherePixel(gamedata.sky_textures[0],
+                                           getSkyTextureHeightRev(i, gamedata.horizonLine),
+                                           gamedata.rays[r_data.j]);
             }
             if(ctrls.fog) {
                 pixelColor = doFloorFog(pixelColor, r_data.fogColor, i, gamedata);
@@ -238,6 +292,8 @@ inline Uint32 renderFloor(const ControlState& ctrls, const GameData& gamedata, c
 
     return pixelColor;
 }
+
+
 
 inline Uint32 renderWall(const ControlState& ctrls, const GameData& gamedata, const RenderData& r_data, int i)
 {
@@ -300,7 +356,7 @@ inline Uint32 renderWall(const ControlState& ctrls, const GameData& gamedata, co
 }
 
 void renderColumn(float ray, const int j, SDL_Surface* screen,
-                  Vector2D<float>& test, float distanceToAWall,
+                  const Vector2D<float>& test, float distanceToAWall,
                   const GameData& gamedata, const ControlState& ctrls)
 {
     using namespace Constants;
@@ -313,6 +369,8 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
 
     r_data.floorColor = Constants::floorColor;
     r_data.skyColor = Constants::skyColor;
+    r_data.screen = screen;
+    r_data.j = j;
 
     if(!ctrls.easterEgg) {
         r_data.ceilingHeight = (float)(screenHeight / 2.0) -
@@ -330,12 +388,19 @@ void renderColumn(float ray, const int j, SDL_Surface* screen,
 
     r_data.wallSizeOnScreen = r_data.floorHeight - r_data.ceilingHeight;
 
+    r_data.floorHeight = clamp(r_data.floorHeight, 0, INT_MAX);
+
     float bufferRay = clampLooping(ray, 0.0f, pi * 2);
     r_data.skyTextureIndex = clamp((int)(starsWidth * (bufferRay / (pi * 2))), 0, starsWidth-1);
     r_data.skyWidthIndex = (int)(screenWidth * (bufferRay / FOV));
 
     if(ctrls.texturedSky) {
-        r_data.skyLightColor = *getTransposedTexturePixel(gamedata.sky_textures[0], 1907, 604);
+        r_data.skyLightColor = 0;
+        for(int i = 0; i < 3; ++i)
+            for(int j = 0; j < 3; ++j)
+                r_data.skyLightColor = blend(r_data.skyLightColor,
+                *getTransposedScaledTexturePixel(gamedata.sky_textures[0], 3, 3, i, j),
+                128);
     } else {
         r_data.skyLightColor = ColorToUint(skyColor.r, skyColor.g, skyColor.b);
     }
