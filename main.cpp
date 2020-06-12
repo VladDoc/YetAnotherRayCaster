@@ -22,15 +22,18 @@
 #include "Sprite.h"
 #include "Rectangle.h"
 #include "ThreadPool.h"
+#include "randomBS.h"
+#include "RenderUtils.h"
 
 void calcRays(std::vector<float>* inRays, int from, int to, const GameData* data)
 {
-    using namespace Constants;
+    Constants& c = Constants::get();
+
     for(size_t j = from; j < to; ++j)
     {
-           (*inRays)[j] = clampLooping((data->player.angle - FOV / 2.0f) +
-                                      ((float)j / (float)screenWidth) * FOV,
-                                       0.0f, 2 * pi);
+           (*inRays)[j] = util::clampLooping((data->player.angle - c.FOV / 2.0f) +
+                                      ((float)j / (float)c.screenWidth) * c.FOV,
+                                       0.0f, 2 * c.pi);
     }
 }
 
@@ -46,7 +49,7 @@ void calculateDistances(std::vector<float>* inRays, int from, int to, GameData* 
 void renderColumns(SDL_Surface* screen, std::vector<float>* inRays, int from, int to, int threadId,
                    const GameData* gamedata, const ControlState* ctrls)
 {
-    random.seed(threadId);
+    random_.seed(threadId);
     for(int j = from; j < to; j++)
     {
         renderColumn((*inRays)[j], j, screen, gamedata->rayPositions[j],
@@ -58,10 +61,10 @@ void renderColumns(SDL_Surface* screen, std::vector<float>* inRays, int from, in
 std::vector<Vector2D<int>> findPath(Vector2D<int>& src, Vector2D<int>& dest, GameData& data)
 {
     using namespace a_star;
-    std::vector<std::vector<int>> grid(Constants::mapHeight,
-                                    std::vector<int>(Constants::mapWidth, 0));
-    for(int i = 0; i < Constants::mapHeight; ++i) {
-        for(int j = 0; j < Constants::mapWidth; ++j) {
+    std::vector<std::vector<int>> grid(Constants::get().mapHeight,
+                                    std::vector<int>(Constants::get().mapWidth, 0));
+    for(int i = 0; i < Constants::get().mapHeight; ++i) {
+        for(int j = 0; j < Constants::get().mapWidth; ++j) {
             grid[i][j] = data.map[i][j].isEmpty();
         }
     }
@@ -86,7 +89,10 @@ std::vector<Vector2D<int>> findPath(Vector2D<int>& src, Vector2D<int>& dest, Gam
 
 void readConfig(GameData& data, ControlState& ctrls)
 {
-    using namespace Constants;
+    Constants& c = Constants::get();
+    using namespace util;
+    using namespace RenderUtils;
+
     LuaScript script("conf.lua");
     if(!script) return; // Then defaults will be loaded.
     std::string filename = script.get<std::string>("config.map");
@@ -131,39 +137,39 @@ void readConfig(GameData& data, ControlState& ctrls)
         data.millisAtCell = (int)(script.get<float>("config.time_at_each_cell") * 1000);
     }
 
-    screenWidth = script.get<int>("config.screenWidth");
-    screenHeight = script.get<int>("config.screenHeight");
-    screenBits = script.get<int>("config.screenBits");
+    c.screenWidth = script.get<int>("config.screenWidth");
+    c.screenHeight = script.get<int>("config.screenHeight");
+    c.screenBits = script.get<int>("config.screenBits");
     ctrls.isFullScreen = script.get<bool>("config.isFullScreen");
 
-    defWalkingSpeed = script.get<float>("config.walkingSpeed");
-    rotatingSpeed = script.get<float>("config.rotatingSpeed");
-    targetSpeed = script.get<float>("config.targetSpeed");
+    c.defWalkingSpeed = script.get<float>("config.walkingSpeed");
+    c.rotatingSpeed = script.get<float>("config.rotatingSpeed");
+    c.targetSpeed = script.get<float>("config.targetSpeed");
 
-    targetFPS = script.get<int>("config.targetFPS");
+    c.targetFPS = script.get<int>("config.targetFPS");
 
-    mouseSensitivity = script.get<float>("config.mouseSensitivity");
-    skyColor = SDL_Color{
+    c.mouseSensitivity = script.get<float>("config.mouseSensitivity");
+    c.skyColor = SDL_Color{
         script.get<int>("config.skyColor.R"),
         script.get<int>("config.skyColor.G"),
         script.get<int>("config.skyColor.B"),
         255
     };
 
-    floorColor = SDL_Color{
+    c.floorColor = SDL_Color{
         script.get<int>("config.floorColor.R"),
         script.get<int>("config.floorColor.G"),
         script.get<int>("config.floorColor.B"),
         255
     };
 
-    dayFogColor = ColorToUint(
+    c.dayFogColor = ColorToUint(
         script.get<int>("config.dayFogColor.R"),
         script.get<int>("config.dayFogColor.G"),
         script.get<int>("config.dayFogColor.B")
     );
 
-    nightFogColor = ColorToUint(
+    c.nightFogColor = ColorToUint(
         script.get<int>("config.nightFogColor.R"),
         script.get<int>("config.nightFogColor.G"),
         script.get<int>("config.nightFogColor.B")
@@ -183,7 +189,7 @@ void readConfig(GameData& data, ControlState& ctrls)
 
 int main(int argc, char** argv)
 {
-    using namespace Constants;
+    Constants& c = Constants::get();
     GameData data;
     ControlState controls;
 
@@ -201,37 +207,37 @@ int main(int argc, char** argv)
 
     atexit(SDL_Quit);
 
-    setWindowPos(8, 30);
+    RenderUtils::setWindowPos(8, 30);
 
     readConfig(data, controls);
 
     Uint32 fullscreen = controls.isFullScreen ? SDL_FULLSCREEN : 0x0;
 
-    SDL_Surface* screen = SDL_SetVideoMode(screenWidth, screenHeight, screenBits,
+    SDL_Surface* screen = SDL_SetVideoMode(c.screenWidth, c.screenHeight, c.screenBits,
                                            SDL_HWSURFACE | SDL_DOUBLEBUF | fullscreen);
 
     if (!screen)
     {
         printf("Unable to set %dx%dx%d video mode: %s\n",
-               screenWidth, screenHeight, screenBits, SDL_GetError());
+               c.screenWidth, c.screenHeight, c.screenBits, SDL_GetError());
         return 1;
     }
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
 
     data.loadAllTextures();
 
-    mirrorTextures(data.m_textures);
-    mirrorTextures(data.m_lightmaps);
+    RenderUtils::mirrorTextures(data.m_textures);
+    RenderUtils::mirrorTextures(data.m_lightmaps);
 
-    doLightMapsToAllTextures(data.textures, data.lightmaps, data);
-    doLightMapsToAllTextures(data.m_textures, data.m_lightmaps, data);
-    setLightMapsTo0(data);
+    RenderUtils::doLightMapsToAllTextures(data.textures, data.lightmaps, data);
+    RenderUtils::doLightMapsToAllTextures(data.m_textures, data.m_lightmaps, data);
+    RenderUtils::setLightMapsTo0(data);
 
     //transposeTextures(data.sky_textures);
-    transposeTextures(data.textures);
-    transposeTextures(data.lightmaps);
-    transposeTextures(data.m_textures);
-    transposeTextures(data.m_lightmaps);
+    RenderUtils::transposeTextures(data.textures);
+    RenderUtils::transposeTextures(data.lightmaps);
+    RenderUtils::transposeTextures(data.m_textures);
+    RenderUtils::transposeTextures(data.m_lightmaps);
 
     if(data.textures.empty() || data.lightmaps.empty())
     {
@@ -256,7 +262,7 @@ int main(int argc, char** argv)
 
     bool finishedPath = false;
 
-    ThreadPool pool(std::thread::hardware_concurrency());
+    Thread::Pool pool(std::thread::hardware_concurrency());
 
     std::vector<std::future<void>> results;
     results.reserve(std::thread::hardware_concurrency());
@@ -274,7 +280,7 @@ int main(int argc, char** argv)
         if(!controls.findpath || finishedPath) {
             doActions(frameTime, data, controls);
         }
-        data.player.angle = clampLooping(data.player.angle, 0.0f, pi * 2);
+        data.player.angle = util::clampLooping(data.player.angle, 0.0f, c.pi * 2);
 
 
         size_t numThreads;
@@ -283,8 +289,8 @@ int main(int argc, char** argv)
 
 
         for(size_t i = 0; i < numThreads; ++i) {
-            results.emplace_back(pool.enqueue(calcRays, &data.rays,
-                        i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+            results.emplace_back(pool.Add_Task(calcRays, &data.rays,
+                        i * (c.screenWidth / numThreads), (i + 1) * (c.screenWidth / numThreads),
                             &data));
         }
 
@@ -292,18 +298,19 @@ int main(int argc, char** argv)
         results.clear();
 
         for(size_t i = 0; i < numThreads; ++i) {
-            results.emplace_back(pool.enqueue(calculateDistances, &data.rays,
-                        i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+            results.emplace_back(pool.Add_Task(calculateDistances, &data.rays,
+                        i * (c.screenWidth / numThreads), (i + 1) * (c.screenWidth / numThreads),
                             &data, &controls));
         }
+
 
         for(auto& a : results) a.wait();
         results.clear();
 
 
         for(size_t i = 0; i < numThreads; ++i) {
-            results.emplace_back(pool.enqueue(renderColumns, screen, &data.rays,
-                         i * (screenWidth / numThreads), (i + 1) * (screenWidth / numThreads),
+            results.emplace_back(pool.Add_Task(renderColumns, screen, &data.rays,
+                         i * (c.screenWidth / numThreads), (i + 1) * (c.screenWidth / numThreads),
                                     rand(), &data, &controls));
         }
 
@@ -313,9 +320,9 @@ int main(int argc, char** argv)
         int end = SDL_GetTicks();
         frameTime = end - start;
 
-        if(frameTime < (1000 / targetFPS))
+        if(frameTime < (1000 / c.targetFPS))
         {
-            SDL_Delay((1000 / targetFPS) - frameTime);
+            SDL_Delay((1000 / c.targetFPS) - frameTime);
         }
 
         end = SDL_GetTicks();
@@ -323,7 +330,7 @@ int main(int argc, char** argv)
 
         if(count == 16)
         {
-            sprintf(fps, "%d", 1000 / clamp(end - start, 1, INT_MAX));
+            sprintf(fps, "%d", 1000 / util::clamp(end - start, 1, INT_MAX));
             SDL_WM_SetCaption(fps, NULL);
             count = 0;
         }
@@ -336,7 +343,7 @@ int main(int argc, char** argv)
 
     std::ofstream out("out.txt");
 
-    print2dVector(data.map, out);
+    util::print2dVector(data.map, out);
 
     out << std::endl;
 

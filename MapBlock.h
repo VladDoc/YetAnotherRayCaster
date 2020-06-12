@@ -112,7 +112,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const MapBlock& mb);
 };
 
-std::ostream& operator<<(std::ostream& os, const MapBlock& mb)
+inline std::ostream& operator<<(std::ostream& os, const MapBlock& mb)
 {
     if(!mb.isEmpty()) os << "0";
     else os << " ";

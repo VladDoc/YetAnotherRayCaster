@@ -4,10 +4,16 @@
 #define GAMECONSTANTS_H_INCLUDED
 
 #include <limits>
+#include <SDL/SDL.h>
 
-#include "Utility.h"
 #include "Vector2D.h"
-namespace Constants {
+
+namespace RenderUtils
+{
+    Uint32 ColorToUint(int, int, int);
+}
+
+struct Constants {
     int screenWidth = 800;
     int screenHeight = 480;
     int screenBits = 32;
@@ -31,7 +37,7 @@ namespace Constants {
 
     float mouseSensitivity = 20.0f; // Works the opposite way. The bigger the value the less actual sensitivity gets.
 
-    float calcFOV() {
+    inline float calcFOV() {
         return pi / (6.4f * ((float)screenHeight / (float)screenWidth));
     }
     float FOV = calcFOV();
@@ -45,25 +51,25 @@ namespace Constants {
     float horisontalBlockCheckStep = nonNaiveBBS * 2;
     int targetFPS = 1000;
 
-    int calcHorizonCap() {
-        return (screenHeight * 4);// / 3;
+    inline int calcHorizonCap() {
+        return (screenHeight * 3);// / 3;
     }
 
     int horizonCap = calcHorizonCap();
 
-    int calcStarsWidth() {
+    inline int calcStarsWidth() {
         return screenWidth * (int)((pi * 2) / FOV);
     }
 
-    int calcStarsHeight() {
+    inline int calcStarsHeight() {
         return screenHeight + horizonCap * 2 + 1;
     }
 
     int starsWidth = calcStarsWidth();
     int starsHeight = calcStarsHeight();
 
-    const Vector2D<int> resolutions[] =
-        {
+    const Vector2D<int> resolutions[12] =
+    {
             {320,  240},
             {640,  480},
             {800,  480},
@@ -76,7 +82,7 @@ namespace Constants {
             {1920, 1080},
             {2560, 1440},
             {3840, 2160}
-        };
+    };
 
     int resArraySize = sizeof(resolutions);
 
@@ -86,15 +92,18 @@ namespace Constants {
     const SDL_Color defFloorColor{0, 90, 30, 255};
     SDL_Color floorColor = defFloorColor;
 
-    Uint32 dayFogColor = ColorToUint(127, 127, 127);
-    Uint32 nightFogColor = ColorToUint(0, 0, 0);
+    Uint32 dayFogColor = RenderUtils::ColorToUint(127, 127, 127);
+    Uint32 nightFogColor = RenderUtils::ColorToUint(0, 0, 0);
 
     Uint32 starColors[4] = {
-                             ColorToUint(255, 0, 0),
-                             ColorToUint(0, 0, 255),
-                             ColorToUint(255, 255, 0),
-                             ColorToUint(165, 165, 165)
+                             RenderUtils::ColorToUint(255, 0, 0),
+                             RenderUtils::ColorToUint(0, 0, 255),
+                             RenderUtils::ColorToUint(255, 255, 0),
+                             RenderUtils::ColorToUint(165, 165, 165)
                            };
-}
+
+    static Constants& get();
+};
+
 
 #endif // GAMECONSTANTS_H_INCLUDED

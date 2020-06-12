@@ -1,98 +1,238 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#include <vector>
-#include <queue>
-#include <memory>
-#include <thread>
+// ================================================================================ Standard Includes
+// Standard Includes
+// --------------------------------------------------------------------------------
 #include <mutex>
+#include <thread>
+#include <queue>
+#include <functional>
 #include <condition_variable>
 #include <future>
-#include <functional>
-#include <stdexcept>
 
-class ThreadPool {
-public:
-    ThreadPool(size_t);
-    template<class F, class... Args>
-    auto enqueue(F&& f, Args&&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type>;
-    ~ThreadPool();
-private:
-    // need to keep track of threads so we can join them
-    std::vector< std::thread > workers;
-    // the task queue
-    std::queue< std::function<void()> > tasks;
 
-    // synchronization
-    std::mutex queue_mutex;
-    std::condition_variable condition;
-    bool stop;
-};
-
-// the constructor just launches some amount of workers
-inline ThreadPool::ThreadPool(size_t threads)
-    :   stop(false)
+namespace Thread
 {
-    for(size_t i = 0;i<threads;++i)
-        workers.emplace_back(
-            [this]
+    // ============================================================================ Pool
+    // Pool
+    //
+    // A basic thread pool
+    // ----------------------------------------------------------------------------
+    class Pool
+    {
+    public:
+        // -------------------------------------------------------------------- Types
+        using Mutex_t          = std::recursive_mutex;
+        using Unique_Lock_t    = std::unique_lock< Mutex_t >;
+        using Condition_t      = std::condition_variable_any;
+        using Threads_t        = std::vector< std::thread >;
+
+        using Task_Function_t  = std::function < void()          >;
+        using Task_Queue_t     = std::queue    < Task_Function_t >;
+
+
+    private:
+        // -------------------------------------------------------------------- State
+        Threads_t    _threads;
+        Task_Queue_t _task_queue;
+        Mutex_t      _queue_mutex;
+        Condition_t  _pool_notifier;
+        bool         _should_stop_processing;
+        bool         _is_emergency_stop;
+        bool         _is_paused;
+
+
+    public:
+        // ==================================================================== Constructors / Destructors
+        // Constructors / Destructors
+        // -------------------------------------------------------------------- Construct ( max threads )
+        Pool()
+
+            : Pool( std::thread::hardware_concurrency() )
+        {}
+
+        // -------------------------------------------------------------------- Construct ( thread count )
+        Pool( const std::size_t thread_count )
+
+            : _should_stop_processing( false ),
+              _is_emergency_stop     ( false ),
+              _is_paused             ( false )
+        {
+            // Sanity
+            if( thread_count == 0 )
+                throw std::runtime_error("ERROR: Thread::Pool() -- must have at least one thread");
+
+            // Init pool
+            _threads.reserve( thread_count );
+
+            for( std::size_t i = 0; i < thread_count; ++i )
+                _threads.emplace_back( [this](){ Worker(); } );
+        }
+
+        // -------------------------------------------------------------------- Deleted
+        Pool            ( const Pool & source ) = delete;
+        Pool & operator=( const Pool & source ) = delete;
+
+        // -------------------------------------------------------------------- Destruct
+        ~Pool()
+        {
+            // Set stop flag
             {
-                for(;;)
-                {
-                    std::function<void()> task;
+                Unique_Lock_t queue_lock( _queue_mutex );
 
-                    {
-                        std::unique_lock<std::mutex> lock(this->queue_mutex);
-                        this->condition.wait(lock,
-                            [this]{ return this->stop || !this->tasks.empty(); });
-                        if(this->stop && this->tasks.empty())
-                            return;
-                        task = std::move(this->tasks.front());
-                        this->tasks.pop();
-                    }
-
-                    task();
-                }
+                _should_stop_processing = true;
             }
-        );
-}
 
-// add new work item to the pool
-template<class F, class... Args>
-auto ThreadPool::enqueue(F&& f, Args&&... args)
-    -> std::future<typename std::result_of<F(Args...)>::type>
-{
-    using return_type = typename std::result_of<F(Args...)>::type;
 
-    auto task = std::make_shared< std::packaged_task<return_type()> >(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-        );
+            // Wake up all threads and wait for them to exit
+            _pool_notifier.notify_all();
 
-    std::future<return_type> res = task->get_future();
-    {
-        std::unique_lock<std::mutex> lock(queue_mutex);
+            for( auto & task_thread: _threads )
+                if( task_thread.joinable() )
+                    task_thread.join();
+        }
 
-        // don't allow enqueueing after stopping the pool
-        if(stop)
-            throw std::runtime_error("enqueue on stopped ThreadPool");
 
-        tasks.emplace([task](){ (*task)(); });
-    }
-    condition.notify_one();
-    return res;
-}
+    public:
+        // ==================================================================== Public API
+        // Public API
+        // -------------------------------------------------------------------- Accessors
+        decltype( _threads.size() ) Thread_Count() const { return _threads.size(); }
 
-// the destructor joins all threads
-inline ThreadPool::~ThreadPool()
-{
-    {
-        std::unique_lock<std::mutex> lock(queue_mutex);
-        stop = true;
-    }
-    condition.notify_all();
-    for(std::thread &worker: workers)
-        worker.join();
+        // -------------------------------------------------------------------- Add_Simple_Task()
+        template < typename Lambda_t >
+
+        void Add_Simple_Task( Lambda_t && function )
+        {
+            // Add to task queue
+            {
+                Unique_Lock_t queue_lock( _queue_mutex );
+
+                // Sanity
+                if( _should_stop_processing || _is_emergency_stop )
+                    throw std::runtime_error( "ERROR: Thread::Pool::Add_Simple_Task() - attempted to add task to stopped pool" );
+
+                // Add our task to the queue
+                _task_queue.emplace( std::forward< Lambda_t >(function) );
+            }
+
+            // Notify the pool that there is work to do
+            _pool_notifier.notify_one();
+        }
+
+        // -------------------------------------------------------------------- Add_Task()
+        template < typename    Function_t,
+                   typename... Args >
+
+        auto Add_Task( Function_t &&    function,
+                       Args       &&... args )
+
+            -> std::future< typename std::result_of< Function_t(Args...) >::type >
+        {
+            // Types
+            using return_t = typename std::result_of< Function_t(Args...) >::type;
+
+            // Create packaged task
+            auto task = std::make_shared< std::packaged_task< return_t() > >
+            (
+                std::bind
+                (
+                    std::forward< Function_t >( function ),
+                    std::forward< Args       >( args     )...
+                )
+            );
+
+            std::future< return_t > result = task->get_future();
+
+
+            // Add task to queue
+            {
+                Unique_Lock_t queue_lock( _queue_mutex );
+
+                // Sanity
+                if( _should_stop_processing || _is_emergency_stop )
+                    throw std::runtime_error( "ERROR: Thread::Pool::Add_Task() - attempted to add task to stopped pool" );
+
+                // Add our task to the queue
+                _task_queue.emplace( [task](){ (*task)(); } );
+            }
+
+
+            // Notify the pool that there is work to do
+            _pool_notifier.notify_one();
+
+            return result;
+        }
+
+
+        // -------------------------------------------------------------------- Emergency_Stop()
+        void Emergency_Stop()
+        {
+            {
+                Unique_Lock_t queue_lock( _queue_mutex );
+
+                _is_emergency_stop = true;
+            }
+
+            _pool_notifier.notify_all();
+        }
+
+        // -------------------------------------------------------------------- Pause()
+        void Pause( bool pause_state )
+        {
+            {
+                Unique_Lock_t queue_lock( _queue_mutex );
+
+                _is_paused = pause_state;
+            }
+
+            _pool_notifier.notify_all();
+        }
+
+
+    public:
+        // ==================================================================== Private API
+        // Private API
+        // -------------------------------------------------------------------- Worker()
+        void Worker()
+        {
+            while( true )
+            {
+                Task_Function_t task;
+
+                // Scoped waiting / task-retrieval block
+                {
+                    // Wait on tasks or 'stop processing' flags
+                    Unique_Lock_t queue_lock( _queue_mutex );
+
+                    _pool_notifier.wait
+                    (
+                        queue_lock,
+
+                        [this]()
+                        { return   (!_task_queue.empty() && !_is_paused)
+                                 ||  _should_stop_processing
+                                 ||  _is_emergency_stop; }
+                    );
+
+
+                    // Bail when stopped and no more tasks remain,
+                    // or if an emergency stop has been requested.
+                    if(    (_should_stop_processing && _task_queue.empty())
+                        ||  _is_emergency_stop )
+                        return;
+
+                    // Retrieve next task
+                    task = std::move( _task_queue.front() );
+                    _task_queue.pop();
+                }
+
+                // Execute task
+                task();
+            }
+        }
+    };
 }
 
 #endif
