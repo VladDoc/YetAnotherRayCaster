@@ -1,21 +1,17 @@
-#pragma once
-
 #ifndef UTILITY_H_INCLUDED
 #define UTILITY_H_INCLUDED
 
 #include <iostream>
 #include <vector>
-#include <random>
-#include <ostream>
 
-#include <SDL/SDL.h>
+#include <cmath>
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 #include "Vector2D.h"
 #include "GameConstants.h"
-
-struct MapBlock;
-struct Sprite;
-struct GameData;
 
 namespace util {
 
@@ -26,26 +22,14 @@ namespace util {
                         float sine, float cosine,
                         int quarter, float margin = 1e-16);
 
-    void loadTextures(std::vector<SDL_Surface*>& txt);
-
-
-    void loadLightmaps(std::vector<SDL_Surface*>& lmp);
-
-    void fillUpTheMapToBeBox(MapBlock** aMap);
-
-    void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt);
-
-    void setLightMapsTo0(GameData& d);
-
-    void loadSprites(std::vector<Sprite>& sprts);
 
     template<typename T>
     void print2dVector(std::vector<std::vector<T>>& vec,
-                             std::ostream& where)
+                       std::ostream& where)
     {
         if(vec.empty() || vec[0].empty()) return;
         for(size_t i = 0; i < vec.size(); ++i) {
-            for(size_t j = 0; j < vec[0].size(); ++j) {
+            for(size_t j = 0; j < vec[i].size(); ++j) {
                 where << vec[i][j];
             }
             where << std::endl;
@@ -113,15 +97,91 @@ namespace util {
         if ( x >=  1 && y <= -1 ) return c.deg270 + c.deg45;
     }
 
-    inline float degreesToRad(float degrees) {
-        return degrees * (Constants::get().pi / 180);
+    template<typename T>
+    constexpr void check()
+    {
+        static_assert(std::is_arithmetic<T>::value,
+                      "Works only with arithmetic types.");
     }
 
-    inline float angleBetweenPoints(Vector2D<float> a, Vector2D<float> b)
+    inline float angleBetweenPoints(const Vector2D<float>& a,
+                                    const Vector2D<float>& b)
     {
         float deltaY = std::abs(b.y - a.y);
         float deltaX = std::abs(b.x - a.x);
         return std::atan2(deltaY, deltaX);
     }
+
+    template <typename T>
+    inline T uintPow(T value, unsigned power)
+    {
+        check<T>();
+
+        if(power == 0) return T{1};
+
+        T temp = value;
+        while(--power) {
+            temp *= value;
+        }
+        return temp;
+    }
+
+    constexpr float radToDeg(float rad)
+    {
+        return rad * (180.0f / M_PI);
+    }
+
+    constexpr float degToRad(float deg)
+    {
+        return deg * (M_PI / 180);
+    }
+
+    template <typename T>
+    inline float vectorAngle(T x, T y)
+    {
+        float val = std::atan2(x, -y);
+        return val < 0 ? M_PI * 2 + val : val;
+    }
+
+    template <typename T>
+    inline T interpolateValue(time_t frametime, T value)
+    {
+        check<T>();
+        return value * (static_cast<T>(frametime) / Constants::get().targetSpeed);
+    }
+
+    inline Vector2D<float> lengthWithAngleToVector(float angle, float length)
+    {
+
+        return {std::sin(angle) * length,
+                std::cos(angle) * length};
+    }
+
+    inline size_t twoIndeciesIntoOne(size_t i, size_t j, size_t width)
+    {
+        return i * width + j;
+    }
+
+    inline void oneIndexIntoTwo(size_t index, size_t width, size_t& i, size_t& j)
+    {
+        i = index / width;
+        j = index - (index / width) * width;
+    }
+
+    template <typename T>
+    inline bool withinArea(Vector2D<T> src, Vector2D<T> dest, float radius)
+    {
+        check<T>();
+
+        T dx = src.x - dest.x;
+        T dy = src.x - dest.x;
+
+        float distance = std::hypot(dx, dy);
+
+        if(distance < radius) {
+            return true;
+        }
+    }
+
 }
 #endif // UTILITY_H_INCLUDED

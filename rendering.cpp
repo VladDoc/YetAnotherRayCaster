@@ -38,6 +38,8 @@ struct RenderData
     bool shouldStarsBeRendered;
     bool shouldTextureBeMirrored;
     bool isHorisontal;
+
+    Constants& c = Constants::get();
 };
 
 
@@ -57,7 +59,7 @@ void rayTraversal(GameData& gamedata, float ray, float* distArray,
         test.x = gamedata.player.x;
         test.y = gamedata.player.y;
 
-        int wasWallHit = 0;
+        bool wasWallHit = false;
 
         int quarter = ray / (c.pi / 2);
 
@@ -96,7 +98,7 @@ void rayTraversal(GameData& gamedata, float ray, float* distArray,
 inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
                             const RenderData& r_data, int i)
 {
-    Constants& c = Constants::get();
+    Constants& c = r_data.c;
     using namespace RenderUtils;
 
     Uint32 pixelColor;
@@ -109,18 +111,18 @@ inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
         if(!ctrls.texturedSky) {
             pixelColor = getSkyGradientedColor(r_data.skyColor, i, gamedata.horizonLine);
         } else {
-//                pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
-//                              starsWidth, starsHeight,
-//                              (i + (horizonCap - gamedata.horizonLine)),
-//                              r_data.skyTextureIndex);
+                pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
+                              c.starsWidth, c.starsHeight,
+                              (i + (c.horizonCap - gamedata.horizonLine)),
+                              r_data.skyTextureIndex);
 //              pixelColor = *getSpherePixelOld(gamedata.sky_textures[0],
 //                                           getSkyTextureHeight(i, gamedata.horizonLine),
 //                                           gamedata.eyes[r_data.j].x,
 //                                           gamedata.eyes[r_data.j].y,
 //                                           i, r_data.j);
-                pixelColor = *getSpherePixel(gamedata.sky_textures[0],
-                                             getSkyTextureHeightRad(i, gamedata.horizonLine),
-                                             gamedata.rays[r_data.j]);
+//                pixelColor = *getSpherePixel(gamedata.sky_textures[0],
+//                                             getSkyTextureHeightRad(i, gamedata.horizonLine),
+//                                             gamedata.rays[r_data.j]);
         }
         if(ctrls.fog) {
             pixelColor = doCeilingFog(pixelColor, r_data.fogColor, i, gamedata);
@@ -131,7 +133,7 @@ inline Uint32 renderCeiling(const ControlState& ctrls, const GameData& gamedata,
 
 inline Uint32 renderFloor(const ControlState& ctrls, const GameData& gamedata, const RenderData& r_data, int i)
 {
-    Constants& c = Constants::get();
+    Constants& c = r_data.c;
     using namespace RenderUtils;
 
     Uint32 pixelColor;
@@ -167,15 +169,15 @@ inline Uint32 renderFloor(const ControlState& ctrls, const GameData& gamedata, c
             if(!ctrls.texturedSky) {
                 pixelColor = getSkyGradientedColor(r_data.skyColor, i, gamedata.horizonLine);
             } else {
-            /*
+
                 pixelColor = *getTransposedScaledTexturePixel(gamedata.sky_textures[0],
-                                starsWidth, starsHeight,
-                                i + (horizonCap - gamedata.horizonLine),
-                                                        r_data.skyTextureIndex);
-            */
-              pixelColor = *getSpherePixel(gamedata.sky_textures[0],
-                                           getSkyTextureHeightRad(i, gamedata.horizonLine),
-                                           gamedata.rays[r_data.j]);
+                                c.starsWidth, c.starsHeight,
+                                i + (c.horizonCap - gamedata.horizonLine),
+                                r_data.skyTextureIndex);
+
+//              pixelColor = *getSpherePixel(gamedata.sky_textures[0],
+//                                           getSkyTextureHeightRad(i, gamedata.horizonLine),
+//                                           gamedata.rays[r_data.j]);
             }
             if(ctrls.fog) {
                 pixelColor = doFloorFog(pixelColor, r_data.fogColor, i, gamedata);
@@ -255,12 +257,13 @@ void renderColumn(float ray,  int j, SDL_Surface* screen,
                   const Vector2D<float>& test, float distanceToAWall,
                   const GameData& gamedata, const ControlState& ctrls)
 {
-    Constants& c = Constants::get();
     using namespace util;
     using namespace RenderUtils;
 
     SDL_Color wallColor;
     RenderData r_data;
+
+    Constants& c = r_data.c;
 
     r_data.distanceToAWall = distanceToAWall;
     r_data.skyScaleCoef = cosf(gamedata.player.angle - ray);
@@ -305,7 +308,8 @@ void renderColumn(float ray,  int j, SDL_Surface* screen,
     }
 
     if(ctrls.night) {
-        r_data.fogColor = blend(fastPixelShadowing(r_data.skyLightColor), c.nightFogColor, 127);
+        r_data.fogColor = blend(fastPixelShadowing(r_data.skyLightColor),
+                                c.nightFogColor, 127);
     } else {
         r_data.fogColor = c.dayFogColor;
     }
@@ -342,8 +346,8 @@ void renderColumn(float ray,  int j, SDL_Surface* screen,
 
         MapBlock currentBlock = gamedata.map[(int)test.y][(int)test.x];
 
-        r_data.texture = NULL;
-        r_data.lightmap = NULL;
+        r_data.texture = nullptr;
+        r_data.lightmap = nullptr;
 
         r_data.isTextured = currentBlock.getIsTextured();
         r_data.isLightMap = currentBlock.getIsLightMapped();

@@ -29,6 +29,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+[Rr]esources/
 
 # Compiled Object files
 *.slo

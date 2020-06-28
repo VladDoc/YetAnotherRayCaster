@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.16)
 
 project(RayCaster)
 
-set(SOURCE_EXE main.cpp)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
+
+file (GLOB_RECURSE SOURCE_EXE "*.cpp" "*.h")
 
 add_executable(raycaster ${SOURCE_EXE})
 target_compile_features(raycaster PRIVATE cxx_std_17)

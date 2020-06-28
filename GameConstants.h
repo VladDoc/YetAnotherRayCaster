@@ -84,7 +84,7 @@ struct Constants {
             {3840, 2160}
     };
 
-    int resArraySize = sizeof(resolutions);
+    int resArraySize = sizeof(resolutions) / sizeof(resolutions[0]);
 
     const SDL_Color defSkyColor{0, 20, 100, 255};
     SDL_Color skyColor = defSkyColor;

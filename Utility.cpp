@@ -3,6 +3,7 @@
 #include "MapBlock.h"
 #include "Sprite.h"
 
+
 void util::loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
 {
     SDL_Surface* surf = SDL_LoadBMP(filename);
@@ -10,7 +11,7 @@ void util::loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
     if(!surf || !texture) {
         fprintf(stderr, "%s", "Unable to load textures. Exiting.....\n");
         fprintf(stderr, "%s", SDL_GetError());
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     SDL_FreeSurface(surf);
     txt.push_back(texture);
@@ -84,53 +85,6 @@ float util::intersectDist(const Vector2D<float>& test,
     return distance.x < distance.y ? distance.x : distance.y;
 }
 
-void util::loadTextures(std::vector<SDL_Surface*>& txt) {
-    loadTexture(txt, "wall2.bmp");
-    loadTexture(txt, "wall.bmp");
-    loadTexture(txt, "wall3.bmp");
-    loadTexture(txt, "wall2.bmp");
-    loadTexture(txt, "hellaworld.bmp");
-}
 
 
-void util::loadLightmaps(std::vector<SDL_Surface*>& lmp) {
-    loadTexture(lmp, "wall2bumpmap.bmp");
-}
-
-
-void util::fillUpTheMapToBeBox(MapBlock** aMap)
-{
-    Constants& c = Constants::get();
-    for(int i = 0; i < c.mapWidth; ++i)
-    {
-        aMap[0][i].setDefault();
-    }
-
-    for(int i = 1; i < c.mapHeight-1; ++i)
-    {
-        for(int j = 0; j < c.mapWidth; ++j)
-        {
-            if(j == 0 || j == c.mapWidth-1) aMap[i][j].setDefault();
-            else aMap[i][j].setEmpty();
-        }
-    }
-
-    for(int i = 0; i < c.mapWidth; ++i)
-    {
-        aMap[c.mapHeight-1][i].setDefault();
-    }
-}
-
-
-void util::loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
-{
-    loadTexture(skyTxt, "sky.bmp");
-}
-
-
-void util::loadSprites(std::vector<Sprite>& sprts)
-{
-    Sprite spr({0, 0, 0, 0}, "");
-    sprts.push_back(spr);
-}
 

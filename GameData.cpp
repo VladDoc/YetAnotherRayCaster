@@ -19,6 +19,31 @@ void GameData::populateCoefs()
     }
 }
 
+static void loadTextures(std::vector<SDL_Surface*>& txt) {
+    util::loadTexture(txt, "wall2.bmp");
+    util::loadTexture(txt, "wall.bmp");
+    util::loadTexture(txt, "wall3.bmp");
+    util::loadTexture(txt, "wall2.bmp");
+    util::loadTexture(txt, "hellaworld.bmp");
+}
+
+
+static void loadLightmaps(std::vector<SDL_Surface*>& lmp) {
+    util::loadTexture(lmp, "wall2bumpmap.bmp");
+}
+
+static void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
+{
+    util::loadTexture(skyTxt, "sky.bmp");
+}
+
+
+static void loadSprites(std::vector<Sprite>& sprts)
+{
+//    Sprite spr({0, 0, 0, 0}, "");
+//    sprts.push_back(spr);
+}
+
 void GameData::fillUpTheStars() {
     Constants& c = Constants::get();
 
