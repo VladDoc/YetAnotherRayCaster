@@ -2,7 +2,7 @@
 
 #include "MapBlock.h"
 #include "Sprite.h"
-
+#include "RenderUtils.h"
 
 void util::loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
 {
@@ -17,6 +17,27 @@ void util::loadTexture(std::vector<SDL_Surface*>& txt, const char* filename)
     txt.push_back(texture);
 }
 
+SDL_Surface* CreateScaledSurfaceFrom(SDL_Surface*, size_t, size_t);
+
+void util::loadMipMap(std::vector<MipmapTex>& txt, const char* filename)
+{
+    SDL_Surface* surf = SDL_LoadBMP(filename);
+    SDL_Surface* texture = SDL_DisplayFormat(surf);
+    if(!surf || !texture) {
+        fprintf(stderr, "%s", "Unable to load textures. Exiting.....\n");
+        fprintf(stderr, "%s", SDL_GetError());
+        exit(EXIT_FAILURE);
+    }
+
+    MipmapTex txtrs;
+    txtrs.mipmaps[0] = texture;
+    for(int i = 1; i < MipmapTex::levels; ++i) {
+        txtrs.mipmaps[i] = RenderUtils::CreateMipMap(txtrs.mipmaps[i-1]);
+    }
+
+    SDL_FreeSurface(surf);
+    txt.push_back(txtrs);
+}
 
 float util::intersectDist(const Vector2D<float>& test,
                           float sine, float cosine,

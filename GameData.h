@@ -11,6 +11,7 @@
 #include "MapBlock.h"
 #include "Vector2D.h"
 #include "GameConstants.h"
+#include "MipmapTex.h"
 
 struct GameData
 {
@@ -21,14 +22,15 @@ struct GameData
 
         volatile bool done = false;
 
-        std::vector<SDL_Surface*> textures;
-        std::vector<SDL_Surface*> lightmaps;
+        std::vector<MipmapTex> textures;
+        std::vector<MipmapTex> lightmaps;
 
         // m_ stands for mirrored
-        std::vector<SDL_Surface*> m_textures;
-        std::vector<SDL_Surface*> m_lightmaps;
+        std::vector<MipmapTex> m_textures;
+        std::vector<MipmapTex> m_lightmaps;
 
         std::vector<SDL_Surface*> sky_textures;
+        Uint32 avgSkyColor = 0;
 
         std::vector<Sprite> hudSprites;
 

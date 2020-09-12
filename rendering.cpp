@@ -52,8 +52,8 @@ void rayTraversal(GameData& gamedata, float ray, float* distArray,
 
         Vector2D<float> eye;
 
-        eye.x = sinf(ray);
-        eye.y = cosf(ray);
+        eye.x = std::sin(ray);
+        eye.y = std::cos(ray);
 
         Vector2D<float> test;
         test.x = gamedata.player.x;
@@ -296,12 +296,7 @@ void renderColumn(float ray,  int j, SDL_Surface* screen,
     r_data.skyWidthIndex = (int)(c.screenWidth * (bufferRay / c.FOV));
 
     if(ctrls.texturedSky) {
-        r_data.skyLightColor = 0;
-        for(int i = 0; i < 3; ++i)
-            for(int k = 0; k < 3; ++k)
-                r_data.skyLightColor = blend(r_data.skyLightColor,
-                *getTransposedScaledTexturePixel(gamedata.sky_textures[0], 3, 3, i, k),
-                128);
+        r_data.skyLightColor = gamedata.avgSkyColor;
     } else {
         r_data.skyLightColor = ColorToUint(c.skyColor.r,
                                            c.skyColor.g, c.skyColor.b);
@@ -357,14 +352,26 @@ void renderColumn(float ray,  int j, SDL_Surface* screen,
         if(!r_data.shouldTextureBeMirrored) {
             // Sometimes if works with false boolean, which causes game to segfault, to prevent that I clamp index.
             if(r_data.isTextured) r_data.texture =
-                gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)];
+                RenderUtils::chooseMip(
+                    gamedata.textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.textures.size()-1)],
+                    distanceToAWall
+                );
             if(r_data.isLightMap) r_data.lightmap =
-                gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)];
+                RenderUtils::chooseMip(
+                    gamedata.lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.lightmaps.size()-1)],
+                    distanceToAWall
+                );
         } else {
             if(r_data.isTextured) r_data.texture =
-                gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)];
+                RenderUtils::chooseMip(
+                    gamedata.m_textures[clamp(currentBlock.getTextureIndex(), 0, (int)gamedata.m_textures.size()-1)],
+                    distanceToAWall
+                );
             if(r_data.isLightMap) r_data.lightmap =
-                gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)];
+                RenderUtils::chooseMip(
+                    gamedata.m_lightmaps[clamp(currentBlock.getLightMapIndex(), 0, (int)gamedata.m_lightmaps.size()-1)],
+                    distanceToAWall
+                );
         }
     }
 

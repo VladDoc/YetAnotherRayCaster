@@ -10,13 +10,21 @@ namespace RenderUtils
     void applyLightMapToTexture(SDL_Surface* texture,
                                 SDL_Surface* lightmap);
 
-    void doLightMapsToAllTextures(std::vector<SDL_Surface*>& txt,
-                              std::vector<SDL_Surface*>& lmp,
-                              GameData& d);
+    void doLightMapsToAllTextures(std::vector<MipmapTex>& txt,
+                                  std::vector<MipmapTex>& lmp,
+                                  GameData& d);
 
     void setLightMapsTo0(GameData& d);
 
     void transposeTexture(SDL_Surface** txt);
+
+    SDL_Surface* CreateSurface(size_t h, size_t w, size_t bitsPerPixel);
+
+    SDL_Surface* CreateScaledSurfaceFrom(SDL_Surface* surf,
+                                         size_t newW, size_t newH,
+                                         bool filter = false);
+
+    SDL_Surface* CreateMipMap(SDL_Surface* surf);
 
     Uint32* getSpherePixelOld(SDL_Surface* txt, float height,
                               float sine, float cosine, int i, int j);
@@ -75,15 +83,32 @@ namespace RenderUtils
     inline Uint32 applyWallGradientToPixel(Uint32 pix, float distanceToAWall)
     {
         using namespace util;
-        SDL_Color pixelRGB = UintToColor(pix);
+
+        const float margin = distanceToAWall * 64;
+
+        const float normalizedR = (float)(pix >> 16 & 0xFF) / 256.0f;
+        const float normalizedG = (float)(pix >>  8 & 0xFF) / 256.0f;
+        const float normalizedB = (float)(pix >>  0 & 0xFF) / 256.0f;
+
+        Uint32 color = ColorToUint(clamp((int)(normalizedR * margin), 0, clamp((int)(255 * normalizedR * 1.5), 0, 255)),
+                                   clamp((int)(normalizedG * margin), 0, clamp((int)(255 * normalizedG * 1.5), 0, 255)),
+                                   clamp((int)(normalizedB * margin), 0, clamp((int)(255 * normalizedB * 1.5), 0, 255)));
+
+        return color;
+        /*
+        Uint8 R = (pix >> 16 & 0xFF);
+        Uint8 G = (pix >>  8 & 0xFF);
+        Uint8 B = (pix >>  0 & 0xFF);
+
         return ColorToUint(
-                    clamp((int)((pixelRGB.r / 3) * (distanceToAWall * 16) / 32),
-                          (int)pixelRGB.r / 3, clamp((int)(pixelRGB.r * 1.1), 0, 255)),
-                    clamp((int)((pixelRGB.g / 3) * (distanceToAWall * 16) / 32),
-                          (int)pixelRGB.g / 3, clamp((int)(pixelRGB.g * 1.1), 0, 255)),
-                    clamp((int)((pixelRGB.b / 3) * (distanceToAWall * 16) / 32),
-                          (int)pixelRGB.b / 3, clamp((int)(pixelRGB.b * 1.1), 0, 255))
+                    clamp((int)((R / 3) * (distanceToAWall * 16) / 32),
+                          (int)R / 3, clamp((int)(R * 1.1), 0, 255)),
+                    clamp((int)((G / 3) * (distanceToAWall * 16) / 32),
+                          (int)G / 3, clamp((int)(G * 1.1), 0, 255)),
+                    clamp((int)((B / 3) * (distanceToAWall * 16) / 32),
+                          (int)B / 3, clamp((int)(B * 1.1), 0, 255))
                  );
+        */
     }
 
     inline Uint32 getShadowedWallColor( SDL_Color color,  float distanceToAWall)
@@ -197,6 +222,12 @@ namespace RenderUtils
         return getTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
     }
 
+    inline Uint32 getScaledTexturePixelColor(SDL_Surface* txt,
+                                  int yourWidth, int yourHeight, int i, int j)
+    {
+        return *getScaledTexturePixel(txt, yourWidth, yourHeight, i, j);
+    }
+
     inline Uint32* getTransposedScaledTexturePixel(SDL_Surface* txt,
                                   int yourWidth, int yourHeight, int i, int j) {
         Vector2D<float> coeffs;
@@ -206,13 +237,110 @@ namespace RenderUtils
         return getTransposedTexturePixel(txt, (int)(i * coeffs.y),(int)(j * coeffs.x));
     }
 
+    inline Uint32 getTransposedScaledTexturePixelColor(SDL_Surface* txt,
+                                  int yourWidth, int yourHeight, int i, int j)
+    {
+        return *getTransposedScaledTexturePixel(txt, yourWidth, yourHeight, i, j);
+    }
+
+    inline Uint32 getScaledTexturePixelFiltered(SDL_Surface* txt,
+                                  int yourWidth, int yourHeight, int i, int j)
+    {
+        Vector2D<float> coeffs;
+        coeffs.x = (float)txt->w / (float)yourWidth;
+        coeffs.y = (float)txt->h / (float)yourHeight;
+
+        Vector2D<int> origin{(int)(j * coeffs.x), (int)(i * coeffs.y)};
+
+        Vector2D<int> plus1{util::clamp(origin.x + 1, 0, txt->w-1) - origin.x,
+                            util::clamp(origin.y + 1, 0, txt->h-1) - origin.y};
+
+        Uint32 p0 = *getTexturePixel(txt, origin.y, origin.x);
+
+        Uint32 p1 = *getTexturePixel(txt, origin.y, origin.x);
+        Uint32 p2 = *getTexturePixel(txt, origin.y, origin.x + plus1.x);
+        Uint32 p3 = *getTexturePixel(txt, origin.y + plus1.y, origin.x);
+        Uint32 p4 = *getTexturePixel(txt, origin.y + plus1.y, origin.x + plus1.x);
+
+        // Calculate the weights for each pixel
+        float fx = ((float)j * coeffs.x) - origin.x;
+        float fy = ((float)i * coeffs.y) - origin.y;
+        float fx1 = 1.0f - fx;
+        float fy1 = 1.0f - fy;
+
+        Uint8 w1 = fx1 * fy1 * 256.0f + 0.5f;
+        Uint8 w2 = fx  * fy1 * 256.0f + 0.5f;
+        Uint8 w3 = fx1 * fy  * 256.0f + 0.5f;
+        Uint8 w4 = fx  * fy  * 256.0f + 0.5f;
+
+        p0 = blend(p0, p1, w1);
+        p0 = blend(p0, p2, w2);
+        p0 = blend(p0, p3, w3);
+        p0 = blend(p0, p4, w4);
+
+        return p0;
+    }
+
+    inline Uint32 getTransposedScaledTexturePixelFiltered(SDL_Surface* txt,
+                                  int yourWidth, int yourHeight, int i, int j)
+    {
+        Vector2D<float> coeffs;
+        coeffs.x = (float)txt->h / (float)yourWidth;
+        coeffs.y = (float)txt->w / (float)yourHeight;
+
+        Vector2D<int> origin{(int)(j * coeffs.x), (int)(i * coeffs.y)};
+
+        Vector2D<int> plus1{util::clamp(origin.x + 1, 0, txt->w-1) - origin.x,
+                            util::clamp(origin.y + 1, 0, txt->h-1) - origin.y};
+
+        Uint32 p0 = *getTransposedTexturePixel(txt, origin.y, origin.x);
+
+        Uint32 p1 = *getTransposedTexturePixel(txt, origin.y, origin.x);
+        Uint32 p2 = *getTransposedTexturePixel(txt, origin.y, origin.x + plus1.x);
+        Uint32 p3 = *getTransposedTexturePixel(txt, origin.y + plus1.y, origin.x);
+        Uint32 p4 = *getTransposedTexturePixel(txt, origin.y + plus1.y, origin.x + plus1.x);
+
+        // Calculate the weights for each pixel
+        float fx = ((float)j * coeffs.x) - origin.x;
+        float fy = ((float)i * coeffs.y) - origin.y;
+        float fx1 = 1.0f - fx;
+        float fy1 = 1.0f - fy;
+
+        Uint8 w1 = fx1 * fy1 * 256.0f + 0.5f;
+        Uint8 w2 = fx  * fy1 * 256.0f + 0.5f;
+        Uint8 w3 = fx1 * fy  * 256.0f + 0.5f;
+        Uint8 w4 = fx  * fy  * 256.0f + 0.5f;
+
+        p0 = blend(p0, p1, w1);
+        p0 = blend(p0, p2, w2);
+        p0 = blend(p0, p3, w3);
+        p0 = blend(p0, p4, w4);
+
+        return p0;
+    }
+
+
+
+    inline SDL_Surface* chooseMip(const MipmapTex& mip, float dist)
+    {
+        int level = (int)(log(dist) / log(2));
+
+        level = util::clamp(level + MipmapTex::bias, 0, MipmapTex::levels-1);
+
+        return mip.mipmaps[level];
+    }
+
+
     void transposeTextures(std::vector<SDL_Surface*>& txts);
+
+    void transposeMipMaps(std::vector<MipmapTex>& txts);
 
     void setWindowPos(int x, int y);
 
     void mirrorTexture(SDL_Surface* txt);
 
     void mirrorTextures(std::vector<SDL_Surface*>& txt);
+    void mirrorMipMaps(std::vector<MipmapTex>& txt);
 
 }
 

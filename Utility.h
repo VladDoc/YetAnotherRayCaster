@@ -12,11 +12,14 @@
 
 #include "Vector2D.h"
 #include "GameConstants.h"
+#include "MipmapTex.h"
 
 namespace util {
 
 
     void loadTexture(std::vector<SDL_Surface*>& txt, const char* filename);
+
+    void loadMipMap(std::vector<MipmapTex>& txt, const char* filename);
 
     float intersectDist(const Vector2D<float>& test,
                         float sine, float cosine,

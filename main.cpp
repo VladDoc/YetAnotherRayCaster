@@ -32,8 +32,8 @@ void calcRays(std::vector<float>* inRays, int from, int to, const GameData* data
     for(size_t j = from; j < to; ++j)
     {
            (*inRays)[j] = util::clampLooping((data->player.angle - c.FOV / 2.0f) +
-                                      ((float)j / (float)c.screenWidth) * c.FOV,
-                                       0.0f, 2 * c.pi);
+                                            ((float)j / (float)c.screenWidth) * c.FOV,
+                                            0.0f, 2 * c.pi);
     }
 }
 
@@ -42,7 +42,7 @@ void calculateDistances(std::vector<float>* inRays, int from, int to, GameData* 
     for(int j = from; j < to; ++j)
     {
         rayTraversal(*gamedata, (*inRays)[j], &gamedata->distances[0],
-                      &gamedata->rayPositions[0], &gamedata->eyes[0], *ctrls, j);
+                     &gamedata->rayPositions[0], &gamedata->eyes[0], *ctrls, j);
     }
 }
 
@@ -205,7 +205,7 @@ int main(int argc, char** argv)
     }
 
 
-    atexit(SDL_Quit);
+    //atexit(SDL_Quit);
 
     RenderUtils::setWindowPos(8, 30);
 
@@ -226,18 +226,18 @@ int main(int argc, char** argv)
 
     data.loadAllTextures();
 
-    RenderUtils::mirrorTextures(data.m_textures);
-    RenderUtils::mirrorTextures(data.m_lightmaps);
+    RenderUtils::mirrorMipMaps(data.m_textures);
+    RenderUtils::mirrorMipMaps(data.m_lightmaps);
 
     RenderUtils::doLightMapsToAllTextures(data.textures, data.lightmaps, data);
     RenderUtils::doLightMapsToAllTextures(data.m_textures, data.m_lightmaps, data);
     RenderUtils::setLightMapsTo0(data);
 
     //transposeTextures(data.sky_textures);
-    RenderUtils::transposeTextures(data.textures);
-    RenderUtils::transposeTextures(data.lightmaps);
-    RenderUtils::transposeTextures(data.m_textures);
-    RenderUtils::transposeTextures(data.m_lightmaps);
+    RenderUtils::transposeMipMaps(data.textures);
+    RenderUtils::transposeMipMaps(data.lightmaps);
+    RenderUtils::transposeMipMaps(data.m_textures);
+    RenderUtils::transposeMipMaps(data.m_lightmaps);
 
     if(data.textures.empty() || data.lightmaps.empty())
     {
@@ -262,10 +262,13 @@ int main(int argc, char** argv)
 
     bool finishedPath = false;
 
-    Thread::Pool pool(std::thread::hardware_concurrency());
+    size_t hardwareThreads = std::thread::hardware_concurrency();
+    hardwareThreads = hardwareThreads ? hardwareThreads : 4;
+
+    Thread::Pool pool(hardwareThreads);
 
     std::vector<std::future<void>> results;
-    results.reserve(std::thread::hardware_concurrency());
+    results.reserve(hardwareThreads);
 
     while (!data.done)
     {
@@ -284,7 +287,7 @@ int main(int argc, char** argv)
 
 
         size_t numThreads;
-        if(controls.multithreaded) numThreads = std::thread::hardware_concurrency();
+        if(controls.multithreaded) numThreads = hardwareThreads;
         else numThreads = 1;
 
 

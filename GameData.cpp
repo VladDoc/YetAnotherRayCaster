@@ -5,6 +5,7 @@
 
 #include "MapBlock.h"
 #include "Utility.h"
+#include "RenderUtils.h"
 
 void GameData::populateCoefs()
 {
@@ -19,17 +20,17 @@ void GameData::populateCoefs()
     }
 }
 
-static void loadTextures(std::vector<SDL_Surface*>& txt) {
-    util::loadTexture(txt, "wall2.bmp");
-    util::loadTexture(txt, "wall.bmp");
-    util::loadTexture(txt, "wall3.bmp");
-    util::loadTexture(txt, "wall2.bmp");
-    util::loadTexture(txt, "hellaworld.bmp");
+static void loadTextures(std::vector<MipmapTex>& txt) {
+    util::loadMipMap(txt, "wall2.bmp");
+    util::loadMipMap(txt, "wall.bmp");
+    util::loadMipMap(txt, "wall3.bmp");
+    util::loadMipMap(txt, "wall2.bmp");
+    util::loadMipMap(txt, "hellaworld.bmp");
 }
 
 
-static void loadLightmaps(std::vector<SDL_Surface*>& lmp) {
-    util::loadTexture(lmp, "wall2bumpmap.bmp");
+static void loadLightmaps(std::vector<MipmapTex>& lmp) {
+    util::loadMipMap(lmp, "wall2bumpmap.bmp");
 }
 
 static void loadSkyTextures(std::vector<SDL_Surface*>& skyTxt)
@@ -50,7 +51,7 @@ void GameData::fillUpTheStars() {
     std::mt19937 r;
     r.seed(1);
     stars.clear();
-    stars.resize(c.starsWidth * (c.starsHeight + c.screenHeight / 2 + 1000));
+    stars.resize(c.starsWidth * c.starsHeight);
 
 
     for(int i = 0; i < c.starsHeight; ++i) {
@@ -77,8 +78,8 @@ void GameData::loadAllTextures()
     } else {
         for(auto& path : texturePaths) {
             if(!path.empty()) {
-                    loadTexture(textures, path.c_str());
-                    loadTexture(m_textures, path.c_str());
+                    loadMipMap(textures, path.c_str());
+                    loadMipMap(m_textures, path.c_str());
             }
         }
     }
@@ -87,9 +88,17 @@ void GameData::loadAllTextures()
     } else {
         for(auto& path : lightmapPaths) {
             if(!path.empty()) {
-                    loadTexture(lightmaps, path.c_str());
-                    loadTexture(m_lightmaps, path.c_str());
+                    loadMipMap(lightmaps, path.c_str());
+                    loadMipMap(m_lightmaps, path.c_str());
             }
+        }
+    }
+
+    for(int i = 0; i < 3; ++i) {
+        for(int j = 0; j < 3; ++j) {
+                avgSkyColor = RenderUtils::blend(avgSkyColor,
+                *RenderUtils::getScaledTexturePixel(sky_textures[0], 3, 3, i, j),
+                128);
         }
     }
 }
@@ -114,17 +123,25 @@ void freeScreenSizeSensitiveData()
 void GameData::freeTextures()
 {
     for(auto i = textures.begin(); i != textures.end(); i++) {
-        SDL_FreeSurface(*i);
+        for(auto& a : i->mipmaps) {
+            SDL_FreeSurface(a);
+        }
     }
     for(auto i = lightmaps.begin(); i != lightmaps.end(); i++) {
-        SDL_FreeSurface(*i);
+        for(auto& a : i->mipmaps) {
+            SDL_FreeSurface(a);
+        }
     }
 
     for(auto i = m_textures.begin(); i != m_textures.end(); i++) {
-        SDL_FreeSurface(*i);
+        for(auto& a : i->mipmaps) {
+            SDL_FreeSurface(a);
+        }
     }
     for(auto i = m_lightmaps.begin(); i != m_lightmaps.end(); i++) {
-        SDL_FreeSurface(*i);
+        for(auto& a : i->mipmaps) {
+            SDL_FreeSurface(a);
+        }
     }
 }
 
@@ -146,7 +163,7 @@ Vector2D<bool> GameData::initMapFromFile(const char* filename)
     std::string line{};
 
     size_t i = 0;
-    MapBlock def{2};
+    MapBlock def{2, 1};
     MapBlock empty{0};
     while(std::getline(in, line) && !in.eof()) {
         map.push_back(std::vector<MapBlock>{});
