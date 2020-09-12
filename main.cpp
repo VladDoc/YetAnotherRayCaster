@@ -205,7 +205,7 @@ int main(int argc, char** argv)
     }
 
 
-    //atexit(SDL_Quit);
+    atexit(SDL_Quit);
 
     RenderUtils::setWindowPos(8, 30);
 
