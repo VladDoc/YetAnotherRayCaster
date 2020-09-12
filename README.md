@@ -1,5 +1,5 @@
 # YetAnotherRayCaster
-Best room walking simulator GOTY 2019
+Best room walking simulator GOTY 2020
 
 To compile it you would need SDL 1.2.15 and Lua 5.3 libraries installed.
 
