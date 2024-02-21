@@ -23,6 +23,8 @@
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
+[Bb]inary/
+[Bb]uild/
 x64/
 x86/
 bld/

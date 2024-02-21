@@ -1,6 +1,7 @@
 #include "rendering.h"
 
 #include <cmath>
+#include <climits>
 
 #include "Utility.h"
 #include "RenderUtils.h"
